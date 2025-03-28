@@ -6,40 +6,54 @@ See below for what has been successfully ported from `start.sh` -> `start.py`, a
 
 ## Main Features
 
-- [] Initial arguments (-h, -v)
+- [x] Initial arguments (-h, -v)
 - [] Git functions
-- [] File editor integration
-- [] File browser integration
+- [x] File editor integration
+- [x] File browser integration
 
 ### Git Functions
 
-- [] Start
-    - [] New
-    - [] Resume
-    - [] Browse
-    - [] Daily Note
-    - [] Cancel
-- [] Fetch
-- [] Log
-    - [] Standard
-    - [] Simple
-    - [] Verbose
-- [] Diff
-- [] Pull
-- [] Push
-- [] Stage
-    - [] Stage All
-    - [] Unstage All
-    - [] Interactive
-- [] Commit
-    - [] 
+- [x] Start
+    - [x] New
+    - [x] Resume
+    - [x] Browse
+    - [x] Daily Note
+    - [x] Cancel
+- [x] Fetch
+- [x] Log
+    - [x] Standard
+    - [x] Simple
+    - [x] Verbose
+- [x] Diff
+- [x] Pull
+- [x] Push
+- [x] Stage
+    - [x] Stage All
+    - [x] Unstage All
+    - [x] Interactive
+- [x] Commit
+    - [x] Message
+    - [x] No Message (cancel) 
 - [] Stash
-- [] Revert
-- [] Discard
+    - [x] Prohibit stash if the script has pending changes
+    - [] Create
+    - [] Apply
+    - [] Pop
+    - [] Drop
+- [x] Revert
+- [x] Discard
 - [] Reset
-- [] Quit
+    - [x] Mixed
+    - [] Hard
+    - [] Soft
+- [x] Quit
 
-### Refactoring
-
+### Planned Features
+- [x] Configuration file with basic settings
 
 ### Bugs
+
+- [x] Menu disappears after Stage/Unstage changes within loop
+    - Moved the "options" enumerator inside the function's while(True) loop.
+- [x] Daily Note: Shows 'DIARY/' instead of the full path
+    - Instead of `git status --short`, used `git status -s -u` for the relative path to each file
