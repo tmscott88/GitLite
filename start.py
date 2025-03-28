@@ -1,27 +1,34 @@
-import configparser
+import configparser  
 import subprocess
 import sys
 from datetime import datetime
+from profile import Profile
+
+config_file = "config.ini"
 
 def main():
     # Initialize config file and read values
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-    browser = config.get('DEFAULT', 'browser')
-    editor = config.get('DEFAULT', 'editor')
-    # Default format: daily_notes_path/YYYY-MM/YYYY-MM-DD.md
-    daily_notes_path = config.get('DEFAULT', 'daily_notes_path')
+    parser = configparser.ConfigParser()
+    parser.read(config_file)
+
+    browser = parser.get('DEFAULT', 'browser')
+    editor = parser.get('DEFAULT', 'editor')
+    daily_notes_path = parser.get('DEFAULT', 'daily_notes_path') # Default format: daily_notes_path/YYYY-MM/YYYY-MM-DD.md
+    version = parser.get('PROGRAM', 'version')
+
+    # profile.py
+    profile = Profile(browser, editor, daily_notes_path)
+
+    welcome = f"GitLite {version}"
+    parser_desc = "App settings are specified in 'config.ini'"
+    options_desc = "Options: [-h | --help | -H] [-o | --options | -O] [-v | --version | -V]"
+    usage_desc = "Usage: python3 start.py [-OPTION]"
 
     # Handle options
     while len(sys.argv) > 1:
         option = sys.argv[1]
-        version = config.get('PROGRAM', 'version')
-        config_desc = "Options are specified in 'config.ini'"
-        options_desc = "Options: [-h | --help | -H] [-o | --options | -O] [-v | --version | -V]"
-        usage_desc = "Usage: python3 start.py [-OPTION]"
-
         if option in ("-h", "--help", "-H"):
-            print(config_desc)
+            print(parser_desc)
             print(usage_desc)
             print(options_desc)
         elif option in ("-o", "--options", "-O"):
@@ -29,7 +36,7 @@ def main():
             print(f'Editor: {editor}')
             print(f'Daily Notes Path: {daily_notes_path}')
         elif option in ("-v", "--version", "-V"):
-            print(f"GitLite {version}")
+            print(welcome)
         else:
             print(f"Unknown Option: {option}")
             print(usage_desc)
@@ -38,14 +45,21 @@ def main():
         sys.argv.pop(1)
 
     # Post-options flow
+    print("-------------------")
+    print(f"GitLite {version}")
+    print(f"Browser: {profile._browser}")
+    print(f"Editor: {profile._editor}")
+    print(f"Daily Notes Path: {profile._daily_notes_path}")
+    print("-------------------")
+        
     print_stashes()
     print_changes()
     prompt_main()
 
 # HELPER FUNCTIONS
 
-def script_is_committed():
-    script_status = subprocess.getoutput("git status __file__ --short")
+def file_is_committed(fpath):
+    script_status = subprocess.getoutput(f"git status {fpath} --short")
     return bool(script_status)
 
 def get_changes():
@@ -63,78 +77,100 @@ def get_stashes():
 def print_changes():
     if get_changes():
         print("\n---Changes---")
-        subprocess.call("git status -s -u", shell=True)
+        run_git_command("status", "-s -u")
         print("-------------")
 
 def print_stashes():
     if get_stashes():
         print("\n---Stashes---")
-        subprocess.call("git stash list", shell=True)
+        run_git_command("stash", "list")
         print("-------------")
 
+def open_editor(fpath):
+    editor = parser.get('DEFAULT', 'editor')
+    try:
+        subprocess.run(f"{editor} {fpath}", shell=True, check=True)
+    except subprocess.CalledProcessError:
+        print(f"Verify that the editor is defined correctly in 'config.ini' and is added to PATH.")
+
+def open_browser():
+    browser = parser.get('DEFAULT', 'browser')
+    try:
+        subprocess.run(browser, shell=True, check=True)
+    except subprocess.CalledProcessError:
+        print(f"Verify that the browser is defined correctly in 'config.ini' and is added to PATH.")
+    
+def run_git_command(operation, args):
+    try:
+        subprocess.run(f"git {operation} {args}", shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Could not run Git operation. {e}")    
+
 def prompt_main():
-    options = ["Start", "Fetch", "Log", "Diff", "Pull", "Push", "Stage", "Commit", "Stash", "Revert", "Discard", "Reset", "Quit"]
+    options = ["Start", "Fetch", "Log", "Diff", "Pull", "Push", "Stage", "Commit", "Stash", "Revert", "Discard", "Reset", "Settings", "Quit"]
     while True:
         for i, opt in enumerate(options):
             print(f"{i+1}. {opt}")
         try:
             choice = int(input("Choose an option: ")) - 1
+            if choice < 1:
+                raise ValueError()
             opt = options[choice]
+            if opt == "Start":
+                prompt_start()
+            elif opt == "Fetch":
+                run_git_command("fetch", "origin")
+                run_git_command("status", "-b")
+            elif opt == "Log":
+                prompt_log()
+            elif opt == "Diff":
+                if not subprocess.getoutput("git diff"):
+                    print("\nNo tracked changes to analyze.")
+                else:
+                    run_git_command("diff", "origin")
+            elif opt == "Pull":
+                run_git_command("pull", "origin")
+            elif opt == "Push":
+                run_git_command("push", "origin")
+            elif opt == "Stage":
+                prompt_stage()
+            elif opt == "Commit":
+                if not get_staged_changes():
+                    print("\nNo changes staged for commit. Please stage changes before committing.")
+                else:
+                    prompt_commit()
+            elif opt == "Stash":
+                # If this script has uncommitted changes, 
+                if not file_is_committed(__file__):
+                    print("Cannot safely stash because this script has been modified. Please commit this script first.")
+                    continue
+                if not (get_changes() or get_stashes()):
+                    print("\nNo changes to stash. No stashes to apply. Cannot proceed.")
+                elif get_changes() and not get_stashes():
+                    print("\nNo stashes found. Create a stash?")
+                    prompt_stash_create()
+                else:
+                    prompt_stash_full()
+            elif opt == "Revert":
+                run_git_command("checkout", "-p")
+            elif opt == "Discard":
+                if not subprocess.getoutput("git ls-files --others --exclude-standard"):
+                    print("\nNo untracked changes to discard.")
+                else:
+                    run_git_command("clean", "-i -d")
+            elif opt == "Reset":
+                prompt_select_commit()
+            elif opt == "Settings":
+                prompt_settings()
+            elif opt == "Quit":
+                sys.exit(1)  
         except (ValueError, IndexError):
             print("Invalid choice.")
             continue
-
-        if opt == "Start":
-            prompt_start()
-        elif opt == "Fetch":
-            subprocess.call("git fetch", shell=True)
-            subprocess.call("git status", shell=True)
-        elif opt == "Log":
-            prompt_log()
-        elif opt == "Diff":
-            if not subprocess.getoutput("git diff"):
-                print("\nNo tracked changes to analyze.")
-            else:
-                subprocess.call("git diff", shell=True)
-        elif opt == "Pull":
-            subprocess.call("git pull", shell=True)
-        elif opt == "Push":
-            subprocess.call("git push", shell=True)
-        elif opt == "Stage":
-            prompt_stage()
-        elif opt == "Commit":
-            if not get_staged_changes():
-                print("\nNo changes staged for commit. Please stage changes before committing.")
-            else:
-                prompt_commit()
-        elif opt == "Stash":
-            if not script_is_committed():
-                print("Cannot safely stash because this script has been modified. Please commit this script first.")
-                continue
-            if not (get_changes() or get_stashes()):
-                print("\nNo changes to stash. No stashes to apply. Cannot proceed.")
-            elif get_changes() and not get_stashes():
-                print("\nNo stashes found. Create a stash?")
-                prompt_stash_create()
-            else:
-                prompt_stash_full()
-        elif opt == "Revert":
-            subprocess.call("git checkout -p", shell=True)
-        elif opt == "Discard":
-            if not subprocess.getoutput("git ls-files --others --exclude-standard"):
-                print("\nNo untracked changes to discard.")
-            else:
-                subprocess.call("git clean -i -d", shell=True)
-        elif opt == "Reset":
-            prompt_select_commit()
-        elif opt == "Quit":
-            sys.exit(1)
-
         print_stashes()
         print_changes()
 
 # PROMPT FUNCTIONS
-
 def prompt_start():
     options = ["New", "Resume", "Browse", "Daily-Note", "Cancel"]
     while True:
@@ -147,14 +183,14 @@ def prompt_start():
             print("Invalid choice")
             continue
         if opt == "New":
-            subprocess.call(editor, shell=True)
+            open_editor("")
         elif opt == "Resume":
             prompt_resume()
         elif opt == "Browse":
-            subprocess.call(browser, shell=True)
+            open_browser()
         elif opt == "Daily-Note":
             path = f"{daily_notes_path}/{datetime.now().strftime('%Y-%m')}/{datetime.now().strftime('%F')}.md"
-            subprocess.call(f"{editor} {path}", shell=True)
+            open_editor(path)
         elif opt == "Cancel":
             break
         else:
@@ -175,7 +211,7 @@ def prompt_resume():
                 if choice == len(files):
                     break
                 elif choice >= 0 and choice < len(files):
-                    subprocess.call(f"{editor} {file}", shell=True)
+                    open_editor(file)
                     break
                 else:
                     print("Invalid choice")
@@ -191,13 +227,13 @@ def prompt_log():
             choice = int(input("Choose an option: ")) - 1
             opt = options[choice]
             if opt == "Standard":
-                subprocess.call("git log --name-status --all", shell=True)
+                run_git_command("log", "--name-status --all")
                 break
             elif opt == "Simple":
-                subprocess.call("git log --oneline --all", shell=True)
+                run_git_command("log", "--oneline --all")
                 break
             elif opt == "Verbose":
-                subprocess.call("git log -p --oneline", shell=True)
+                run_git_command("log", "--oneline -p")
                 break
             elif opt == "Cancel":
                 break
@@ -209,7 +245,7 @@ def prompt_log():
 def prompt_commit():
     message = input("Enter commit message (or pass empty message to cancel): ")
     if message:
-        subprocess.call(f"git commit -m '{message}'", shell=True)
+        run_git_command("commit", "-m '{message}'")
     else:
         print("\nCanceled commit.")
 
@@ -223,15 +259,14 @@ def prompt_stage():
             opt = options[choice]
         except (ValueError, IndexError):
             print("Invalid choice")
-            continue
         if opt == "Stage-All":
-            subprocess.call("git add -A", shell=True)
+            run_git_command("add", "-A")
             print("\nStaged all changes.")
         elif opt == "Unstage-All":
-            subprocess.call("git restore --staged .", shell=True)
+            run_git_command("restore", "--staged .")
             print("\nUnstaged all changes.")
         elif opt == "Stage-Interactive":
-            subprocess.call("git add -i", shell=True)
+            run_git_command("add", "-i")
         elif opt == "Cancel":
             break
         else:
@@ -251,14 +286,14 @@ def prompt_stash_create():
             if opt == "Stash All":
                 message = input("Enter stash message (or pass empty message to cancel): ")
                 if message:
-                    subprocess.call(f"git stash push -u -m '{message}'", shell=True)
+                    run_git_command("stash push", "-u -m '{message}'")
                 else:
                     print("\nCanceled stash.")
                 break
             elif opt == "Stash Staged":
                 message = input("Enter stash message (or pass empty message to cancel): ")
                 if message:
-                    subprocess.call("git stash push --staged -m '{message}'", shell=True)
+                    run_git_command("stash push", "--staged -m '{message}'")
                 break
             elif opt == "Cancel":
                 break
@@ -298,7 +333,7 @@ def prompt_stash_full():
                             if stash_choice == len(stashes_trim):
                                 break
                             elif stash_choice >= 0 and stash_choice < len(stashes_trim):
-                                subprocess.call(f"git stash apply {stash}", shell=True)
+                                run_git_command("stash apply", stash)
                                 break
                             else:
                                 print("Invalid choice.")
@@ -318,7 +353,7 @@ def prompt_stash_full():
                             if stash_choice == len(stashes_trim):
                                 break
                             elif stash_choice >= 0 and stash_choice < len(stashes_trim):
-                                subprocess.call(f"git stash pop {stashes_trim[stash_choice]}", shell=True)
+                                run_git_command("stash pop", stashes_trim[stash_choice])
                                 break
                             else:
                                 print("Invalid choice.")
@@ -347,7 +382,7 @@ def prompt_stash_full():
                                         drop_choice = int(input("Choose an option: ")) - 1
                                         drop_opt.drop_confirm_options[drop_choice]
                                         if drop_opt == "Yes":
-                                            subprocess.call(f"git stash drop {stashes_trim[stash_choice]}", shell=True)
+                                            run_git_command("stash drop", stashes_trim[stash_choice])
                                             break
                                         elif drop_opt == "No":
                                             break
@@ -373,7 +408,7 @@ def prompt_stash_full():
 
 def prompt_select_commit():
     print("Select a commit to reset to.")
-    subprocess.call("git log --oneline --all -n 10", shell=True)
+    subprocess.run("git log --oneline --all -n 10", shell=True)
     commits = subprocess.getoutput("git log --oneline --all -n 10 | cut -c -7").splitlines()
     if not commits:
         return
@@ -405,10 +440,10 @@ def prompt_reset(commit):
             choice = int(input("Choose an option: ")) - 1
             opt = options[choice]
             if opt == "Mixed":
-                subprocess.call(f"git reset --mixed {commit}", shell=True)
+                run_git_command(f"reset --mixed", commit)
                 break
             elif opt == "Soft":
-                subprocess.call(f"git reset --soft {commit}", shell=True)
+                run_git_command(f"reset --soft", commit)
                 break
             elif opt == "Hard":
                 print(f"Hard reset to commit {commit}? ALL CHANGES WILL BE DISCARDED!")
@@ -419,8 +454,8 @@ def prompt_reset(commit):
                     try:
                         reset_choice = int(input("Choose an option: ")) - 1
                         hard_opt = hard_reset_options[reset_choice]
-                        if hard_ == "Yes":
-                            subprocess.call(f"git reset --hard {commit}", shell=True)
+                        if hard_opt == "Yes":
+                            run_git_command("reset --hard", commit)
                             break
                         elif hard_opt == "No":
                             break
@@ -436,5 +471,54 @@ def prompt_reset(commit):
         except (ValueError, IndexError):
             print("Invalid choice")
 
+def prompt_settings():
+    options = ["Browser", "Editor", "Daily Notes", "Cancel"]
+    for i, opt in enumerate(options):
+        print(f"{i+1}. {opt}")
+    while True:
+        try:
+            choice = int(input("Choose an option: ")) - 1
+            opt = options[choice]
+            if opt == "Browser":
+                current_browser = parser.get('DEFAULT', 'browser')
+                new_browser = input("Set new default browser (or pass empty message to continue): ")
+                if new_browser:
+                    parser.set('DEFAULT', 'browser', new_browser)
+                    with open(config_file, 'w') as newfile:
+                        parser.write(newfile)
+                    # test if setting is valid. if not, re-prompt
+                else:
+                    print(f"Browser kept as {current_browser}")
+                break
+            elif opt == "Editor":
+                current_editor = parser.get('DEFAULT', 'editor')
+                new_editor = input("Set new default editor (or pass empty message to continue): ")
+                if new_editor:
+                    parser.set('DEFAULT', 'browser', new_editor)
+                    with open(config_file, 'w') as newfile:
+                        parser.write(newfile)
+                    # test if setting is valid. if not, re-prompt
+                else:
+                    print(f"Editor kept as {current_editor}")
+                break
+            elif opt == "Daily Notes":
+                current_path = parser.get('DEFAULT', 'daily_notes_path')
+                new_path = input("Set new default daily notes path (or pass empty message to continue): ")
+                if new_path:
+                    parser.set('DEFAULT', 'daily_notes_path', new_path)
+                    with open(config_file, 'w') as newfile:
+                        parser.write(newfile)
+                    # test if setting is valid. if not, re-prompt
+                else:
+                    print(f"Daily notes path kept as {current_path}")  
+                break
+            elif opt == "Cancel":
+                break
+            else:
+                print("Invalid choice")
+        except (ValueError, IndexError):
+            print("Invalid choice")
+
 if __name__ == "__main__":
+
     main()

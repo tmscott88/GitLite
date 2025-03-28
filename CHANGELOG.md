@@ -42,10 +42,10 @@ See below for what has been successfully ported from `start.sh` -> `start.py`, a
     - [] Drop
 - [x] Revert
 - [x] Discard
-- [] Reset
+- [x] Reset
     - [x] Mixed
-    - [] Hard
-    - [] Soft
+    - [x] Hard
+    - [x] Soft
 - [x] Quit
 
 ### Planned Features
@@ -57,3 +57,4 @@ See below for what has been successfully ported from `start.sh` -> `start.py`, a
     - Moved the "options" enumerator inside the function's while(True) loop.
 - [x] Daily Note: Shows 'DIARY/' instead of the full path
     - Instead of `git status --short`, used `git status -s -u` for the relative path to each file
+- [] Do not allow negative number input in menus
