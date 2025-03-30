@@ -1,7 +1,12 @@
 # Python
 **/__pycache__
 **/config.ini
+# PyInstaller
+**/build
+**/dist
+**/*.spec
+**/*.exe
 # VSCode
 **/.vscode
 # Rucola Notes
-**/.html
+**/*.html
