@@ -1,20 +1,39 @@
 # CHANGELOG
 
-This is the Python version of a Bash script which I wrote for basic Git repo interactions.
+See below for what has been successfully ported from `start.sh` -> `gitlite.py`, and what reamins in development. I started at version 0.8.0 for this repo since I already migrated about 80% of the former script to the current script.
 
-This is a repository intended to track the conversion of my Bash script `start.sh` (from another repo) to a Python app, AKA `GitLite`. Once all features have been successfully ported, then improvements will begin.
+## 0.8.3
 
-See below for what has been successfully ported from `start.sh` -> `start.py`, and what is in progress.
+- Add more settings
+  - Commit Limit (for Git Log, Git Reset)
+- Rewrite prompt menu labels and feedback to be more intuitive
+  - Improved formatting for this feedback
+- Lots of refactoring
 
-## Main Features
+## 0.8.2
 
-- [x] Initial arguments (-h, -v)
-- [] Git functions
-- [x] File editor integration
-- [x] File browser integration
+New Features
+
+- Feature: Configuration file with basic settings
+- Various Bugfixes
+  - Fix for menu disappears after Stage/Unstage changes within loop
+    - Moved the "options" enumerator inside the function's while(True) loop.
+  - Daily Note: Shows 'DIARY/' instead of the full path
+    - Instead of `git status --short`, used `git status -s -u` for the relative path to each file
+  - Do not allow negative number input in menus
+
+## 0.8.0 - 0.8.1
+
+- ~80% migrated functions from Bash -> Python
+- Basic file editor integration
+- Basic file browser integration
+- Planning & Testing
+
+## Development
 
 ### Git Functions
 
+- [x] Prohibit `stash`, `reset` if the script has pending changes
 - [x] Start
   - [x] New
   - [x] Resume
@@ -37,7 +56,6 @@ See below for what has been successfully ported from `start.sh` -> `start.py`, a
   - [x] Message
   - [x] No Message (cancel)
 - [] Stash
-  - [x] Prohibit stash if the script has pending changes
   - [] Create
   - [] Apply
   - [] Pop
@@ -52,20 +70,4 @@ See below for what has been successfully ported from `start.sh` -> `start.py`, a
 
 ### Planned Features
 
-- [x] Configuration file with basic settings
-- [] Menu to enable/disable extra features like Daily Notes
 - [] More Git file shortcuts (.gitignore, README.md)
-
-### Refactoring
-
-- [] Rewrite prompt menu labels and feedback to be more intuitive
-  - [] Consistent newlines & formatting for this feedback
-- [] Reduce repeated code/improve modularity
-
-### Bugs
-
-- [x] Menu disappears after Stage/Unstage changes within loop
-  - Moved the "options" enumerator inside the function's while(True) loop.
-- [x] Daily Note: Shows 'DIARY/' instead of the full path
-  - Instead of `git status --short`, used `git status -s -u` for the relative path to each file
-- [x] Do not allow negative number input in menus
