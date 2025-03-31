@@ -2,6 +2,16 @@
 
 See below for what has been successfully ported from `start.sh` -> `gitlite.py`, and what reamins in development. I started at version 0.8.0 for this repo since I already migrated about 80% of the former script to the current script.
 
+## (WIP) 0.8.4
+
+- [x] Add "About" option to main menu
+- [x] Improve Settings menu to mimic `config.ini` structure. See `README.md` for the new base config file.
+- [x] Remove unnecessary shell calls
+- [x] Improve error when an app cannot be found or crashes on execution.
+
+- [] Cross-platform fixes (Windows, macOS, Linux)
+- [] Improve/clarify initial arguments
+
 ## 0.8.3
 
 - Add more settings

@@ -2,33 +2,16 @@ import configparser
 import subprocess
 import os
 import sys
+import readchar
+from shutil import which
 from datetime import datetime
 
 __parser = configparser.ConfigParser()
-
-def read_config(fpath):
-    try:
-        with open(fpath, 'r', encoding="utf-8") as file:
-            __parser.read("config.ini")
-    except FileNotFoundError:
-        print(f"\nConfig file '{fpath}' not found!") 
-        print(f"Ensure this script and '{fpath}' are both placed in your Git project's root directory.")
-    except Exception as e:
-        print(f"\nError while reading config file {fpath}: {e}")
-
-def save_config(message):
-    try:
-        with open("config.ini", "w", encoding="utf-8") as newfile:
-            __parser.write(newfile)
-        print(f"\n{message}")
-    except Exception as e:
-        print(f"\nError while saving to config file {newfile}: {e}")
+__version_num = "0.8.3-alpha4"
+__config = "config.ini"
 
 def main():
-    read_config("config.ini")
-
-    version_num = "0.8.3"
-    parser_desc = "Settings are defined in 'config.ini'. See 'README.md' for a template config file."
+    parser_desc = f"Settings are defined in '{__config}'. See 'README.md' for a template config file. This file is required in order to configure"
     options_desc = "Options: [-h | --help | -H] [-o | --options | -O] [-v | --version | -V]"
     usage_desc = f"Usage: python3 | py {os.path.basename(__file__)} [-OPTION]"
 
@@ -40,9 +23,10 @@ def main():
             print(usage_desc)
             print(options_desc)
         elif option in ("-o", "--options", "-O"):
-            print_config()
+            if has_valid_config():
+                print_config()
         elif option in ("-v", "--version", "-V"):
-            print(version_desc)
+            print(f"Gitlite {__version_num}")
         else:
             print(f"\nUnknown Option: {option}")
             print(usage_desc)
@@ -51,51 +35,105 @@ def main():
         sys.argv.pop(1)
 
     # Post-options flow
-    print("------------------------------------")
-    print(f"GitLite {version_num}")
-    print("Author: Tom Scott (tmscott88)")
-    print("\nhttps://github.com/tmscott88/GitLite")
-    print("------------------------------------")
-        
-    print_stashes()
-    print_changes()
-    main_menu()
+    print_splash()
+    if not is_valid_repo():
+        print(f"\nError: Could not resolve Git repo from the current folder.") 
+        print("\nPlease place this executable in your Git repo's root directory.")
+        prompt_exit()
+    else:
+        # initial config verification
+        if not has_valid_config():
+            print_config_error()
+        print_stashes()
+        print_changes()
+        main_menu()
+
+# check if we're inside a valid git repo
+def is_valid_repo():
+    try:
+        git_root = subprocess.check_output("git rev-parse --show-toplevel", text=True).strip()
+        script_dir = get_current_dir()
+        # match the path seperators
+        print(f"Git Root: {git_root}")
+        print(f"Script Dir: {script_dir}")
+        return bool(git_root == script_dir)
+    except subprocess.CalledProcessError:   
+        print("\nPlease place this executable in your Git repo's root directory.")
+        return False
+
+def has_valid_config():
+    try:
+        with open(__config, 'r', encoding="utf-8") as file:
+            __parser.read(__config)
+        return True
+    except FileNotFoundError:
+        return False
+    except Exception as e:
+        print(f"\nError while reading config file {__config}: {e}")
+    return False
+
+def save_config(message):
+    try:
+        with open(__config, "w", encoding="utf-8") as newfile:
+            __parser.write(newfile)
+        print(f"\n{message}")
+    except Exception as e:
+        print(f"\nError while saving to config file {newfile}: {e}")
+
+def get_platform():
+    match(os.name):
+        case "nt":
+            return "Windows"
+        case "posix":
+            return "Unix"
+        case _:
+            return "Other"
+
+def get_current_dir():
+    current = os.path.dirname(os.path.abspath(sys.argv[0]))
+    unix_converted = current.strip().replace(os.sep, '/')
+    return unix_converted
+
+def prompt_exit():
+    print("\nPress any key to exit...")
+    k = readchar.readchar()
+    sys.exit()
 
 # Parser getters
 def get_browser():
-    return __parser.get('DEFAULT', 'browser')
+    return __parser.get('APPS', 'browser')
 
 def get_editor():
-    return __parser.get('DEFAULT', 'editor')
+    return __parser.get('APPS', 'editor')
 
 def get_commit_limit():
-    return __parser.get('DEFAULT', 'commit_limit')
+    return __parser.get('MISC', 'commit_limit')
 
 def get_daily_notes_status():
     return __parser.get('DAILY_NOTES', 'status')
 
-def get_daily_notes_dir():
+def get_daily_notes_path():
     return __parser.get('DAILY_NOTES', 'path')
 
-def set_browser(new_browser):
+def set_app(new_app, app_type):
+    # if get_platform() == "Windows":
+    #     path_check = subprocess.getoutput(["where", new_app])
+    #     print(f"(WIN) Shutils 'where': {which(new_app)}")
+    #     print(f"(WIN) Subprocess path_check 'where': {path_check}")
+    # else:
+    #     path_check = subprocess.getoutput(["which", new_app])
+    #     print(f"Shutils 'which': {which(new_app)}")
+    #     print(f"Subprocess 'which': {path_check}")
     try:
-        subprocess.run(["which", new_browser], check=True, capture_output=True)
-        __parser.set('DEFAULT', 'browser', new_browser)
-        save_config(f"Updated browser: {new_browser}")
-    except subprocess.CalledProcessError:
-        print(f"\nBrowser '{new_browser}' not found on system. Cannot update browser setting.")
+        if (which(new_app)) is None:
+            raise FileNotFoundError
+        else:
+            __parser.set('APPS', app_type, new_app)
+            save_config(f"Updated {app_type}: {new_app}")
+    except FileNotFoundError:
+        print_app_error(new_app)
     except Exception as e:
-        print(f"\nError while setting browser '{new_browser}'. {e}")
-
-def set_editor(new_editor):
-    try:
-        subprocess.run(["which", new_editor], check=True, capture_output=True)
-        __parser.set('DEFAULT', 'editor', new_editor)
-        save_config(f"Updated editor: {new_editor}")
-    except subprocess.CalledProcessError:
-        print(f"\nEditor '{new_editor}' not found on system. Cannot update editor setting.")
-    except Exception as e:
-        print(f"\nError while setting editor '{new_editor}'. {e}")
+        print(f"\nError while setting {app_type} '{new_app}'. {e}")
     
 
 def set_commit_limit(new_limit):
@@ -105,50 +143,81 @@ def set_commit_limit(new_limit):
         return
     else:
         try:
-            __parser.set('DEFAULT', 'commit_limit', new_limit)
+            __parser.set('MISC', 'commit_limit', new_limit)
             save_config(f"Updated commit limit: {new_limit}")
         except Exception as e:
             print(f"\nError while setting commit limit {new_limit}. {e}")
 
 def set_daily_notes_status(new_status):
-    if (new_status == "true" or new_status == "false"):
+    if (new_status == "on" or new_status == "off"):
         __parser.set('DAILY_NOTES', 'status', new_status)
-        save_config(f"Daily Notes: {new_status}")
+        save_config(f"Set Daily Notes: {"On" if new_status == "on" else "Off"}")
     else:
-        print(f"\nUnexpected status {new_status}. Status must be 'true' or 'false'.")
+        print(f"\nUnexpected status {new_status}. Status must be 'on' or 'off'.")
 
 def set_daily_notes_path(new_path):
     __parser.set('DAILY_NOTES', 'path', new_path)
-    save_config(f"\nUpdated daily notes path: {new_path}")
+    save_config(f"Updated daily notes path: {new_path}")
 
-def is_existing_path(dir):
-    return bool(os.path.isdir(dir) or os.path.isfile(dir))
+def is_existing_file(path):
+    return bool(os.path.isfile(path))
+    
+def is_existing_directory(dir):
+    return bool(os.path.isdir(dir))
 
-def prompt_new_directory(dir):
-    print(f"\nDirectory '{dir}' not found. Create a new directory at this location?")
-    options = ["Yes", "No"]
-    while True:
-        for i, opt in enumerate(options):
-            print(f"{i+1}. {opt}")
+def create_new_file_if_needed(new_path):
+    # if file nor (conflicting) directory exist, create the file
+    if not is_existing_file(new_path) and not is_existing_directory(new_path):
         try:
-            choice = int(input("Choose an option: ")) - 1
-            opt = options[choice]
-            if opt == "Yes":
-                os.makedirs(dir)
-            elif opt == "No":
-                break
-        except (ValueError, IndexError):
-            print("\nInvalid input.")
-            continue
+            # TODO test path normalization/input sanitization
+            # normalized_path = os.path.normpath(new_path)    
+            # print(new_path)
+            # print(normalized_path)
+            
+            # Extract just path from full path. Create all intermediate directors up to file if needed, exist_ok=True to not raise error if directory already exists
+            os.makedirs(os.path.dirname(new_path), exist_ok=True)
+            # Create the file
+            f = open(new_path, 'w')
         except subprocess.CalledProcessError as e:
-            print(f"\nError creating directory '{dir}'. {e}")
-            break
+            print(f"\nError creating file '{new_path}'. {e}")
+            return
+        # Only open editor if directory was created properly from the previous step
+        if is_existing_file(new_path):
+            open_editor(new_path)
+        else:
+            print(f"\nCanceled file creation.")
+    # if file doesn't exist but conflicting folder exists
+    elif not is_existing_file(new_path):
+        print(f"\nA folder '{new_path}' already exists in this directory. Please choose a different file name or path.")
+    else:
+        open_editor(new_path)
 
-
+def create_new_directory_if_needed(new_path):
+    # if path doesn't exist, create the directory
+    if not is_existing_directory(new_path) and not is_existing_file(new_path):
+        # prompt_create_directory(new_path)
+        try:
+            # TODO test path normalization
+            os.makedirs(new_path)
+            if is_existing_directory(new_path):
+                set_daily_notes_path(new_path)
+            else:
+                print(f"\nPath creation failed. Keep current path: '{get_daily_notes_path()}'.")
+                return
+        except Exception as e:
+            print(f"\nError creating directory '{new_path}'. {e}")
+            return
+    # if directory doesn't exist but conflicting file exists
+    elif not is_existing_directory(new_path) and is_existing_file(new_path):
+        print(f"\nA file '{new_path}' already exists in this directory. Please choose a different directory name or path.")
+    else:
+        set_daily_notes_path(new_path)
+        
 # HELPER FUNCTIONS
+
 def file_has_changes(fpath):
-    script_status = subprocess.getoutput(f"git status {fpath} --short")
-    return bool(script_status)
+    status = subprocess.getoutput(f"git status {fpath} --short")
+    return bool(status)
 
 def repo_has_changes():
     changes = subprocess.getoutput("git status --porcelain")
@@ -163,16 +232,20 @@ def repo_has_stashes():
     return bool(stashes)
 
 def is_daily_notes_enabled():
-    enabled = get_daily_notes_status()
-    return bool(enabled == "true")
+    status = get_daily_notes_status()
+    return bool(status == "on")
+
+def print_splash():
+    print(f"\n[GitLite {__version_num}]")
+    print("Author: Tom Scott (tmscott88)")
+    print("https://github.com/tmscott88/GitLite")
 
 def print_config():
-    print("\n[config.ini]")
-    print(f"* Browser: {get_browser()}")
-    print(f"* Editor: {get_editor()}")
-    print(f"* Daily Notes: {get_daily_notes_status()}")
-    print(f"* Daily Notes Location: {get_daily_notes_dir()}")
-    print(f"* Commit Display Limit: {get_commit_limit()}")
+    for section in __parser.sections():
+        print()
+        print(f"[{section}]")
+        for key, value in __parser.items(section):
+            print(f"{key} = {value}")
 
 def print_changes():
     if repo_has_changes():
@@ -189,36 +262,50 @@ def print_options(options, title):
     for i, opt in enumerate(options):
         print(f"{i+1}. {opt}")
 
-def open_editor(fpath):
-    editor = get_editor()
-    try:
-        subprocess.run(f"{editor} {fpath}", shell=True, check=True)
-    except subprocess.CalledProcessError:
-        print(f"\nCould not open editor '{editor}'. Ensure that the editor is defined correctly in 'config.ini' and added to PATH.")
+def print_app_error(name):
+    print(f"\nApp '{name}' not found, or '{name}' just crashed. This may be due to a missing reference/installation, or perhaps something is wrong with {name}'s configuration.") 
+    print(f"\nEnsure that the app's reference name is defined correctly in '{__config}' and installed systemwide.") 
+    print(f"\nConsult {name}'s documentation and/or forums for more information.")
+    print(f"\nIf '{name}' works fine outside of GitLite, and you are still experiencing issues here, please open an issue at:")
+    print("\nhttps://github.com/tmscott88/GitLite/issues")
 
-def open_daily_note(fpath):
-    daily_notes_dir = get_daily_notes_dir()
-    open_editor(f"{daily_notes_dir}/{fpath}")
+def print_config_error():
+    print(f"\nWarning: Config file '{__config}' not found. Functionality will be limited until this is resolved.") 
+    print(f"\nPlease create and place `{__config}' in your Git repo's root directory.")
+    print(f"\nSee the included README or visit https://github.com/tmscott88/GitLite/blob/main/README.md for further instructions.")
 
 def open_browser():
     browser = get_browser()
     try:
-        subprocess.run(browser, shell=True, check=True)
+        subprocess.run(browser, check=True)
     except subprocess.CalledProcessError:
-        print(f"\nCould not open browser '{browser}'. Ensure that the browser is defined correctly in 'config.ini' and added to PATH.")
+        print_app_error(browser)
+        
+def open_editor(fpath):
+    if not has_valid_config():
+        # open default system editor
+        if get_platform() == "Windows":
+            os.startfile(fpath, "open")
+    else: 
+        editor = get_editor()
+        try:
+            subprocess.run(f"{editor} {fpath}", check=True)
+        except subprocess.CalledProcessError:
+            print_app_error(editor)
+
+def open_daily_note(fpath):
+    daily_notes_dir = get_daily_notes_path()
+    open_editor({os.path.join(daily_notes_dir, fpath)})
+
 
 def git(command):
     try:
-        subprocess.run(f"git {command}", shell=True, check=True)
+        subprocess.run(f"git {command}", check=True)
     except subprocess.CalledProcessError as e:
-        print(f"\nCould not run Git operation. {e}")    
+        print(f"\nGit command failed. {e}")    
         
 def main_menu():
-    options = []
-    if file_has_changes(__file__):
-        options = ["Start", "Status", "Log", "Diff", "Pull", "Push", "Stage", "Commit", "Revert", "Discard", "Reset", "Settings", "Quit"]
-    else:
-        options = ["Start", "Status", "Log", "Diff", "Pull", "Push", "Stage", "Commit", "Stash", "Revert", "Discard", "Reset", "Settings", "Quit"]
+    options = ["Start", "Status", "Log", "Diff", "Pull", "Push", "Stage", "Commit", "Stash", "Revert", "Discard", "Reset", "Settings", "About", "Quit"]
     while True:
         print_options(options, "Main Menu")
         try:
@@ -230,8 +317,8 @@ def main_menu():
                     case "Start":
                         prompt_start()
                     case "Status":
-                        print("\n[Remote]") 
                         git("fetch")
+                        print("\n[Remote]") 
                         git("status")
                     case "Log":
                         prompt_log()
@@ -273,7 +360,14 @@ def main_menu():
                     case "Reset":
                         prompt_select_commit()
                     case "Settings":
-                        prompt_settings()
+                        if not has_valid_config():
+                            print_config_error()
+                        else:
+                            prompt_settings()
+                    case "About":
+                        print_splash()
+                        print(f"Platform: {get_platform()}")
+                        print(f"Python: {sys.version[:7]}")
                     case "Quit":
                         sys.exit(1)  
                     case _:
@@ -285,11 +379,12 @@ def main_menu():
 
 # PROMPT FUNCTIONS
 def prompt_start():
-    options = []
-    if is_daily_notes_enabled():
-        options = ["Back to Main Menu", "New", "Resume", "Browse", "Open Daily Note"]
+    options = ["Back to Main Menu", "New", "Resume", "Browse"]
+    if not has_valid_config():
+        print_config_error()
     else:
-        options = ["Back to Main Menu", "New", "Resume", "Browse"]
+        if is_daily_notes_enabled():
+            options = ["Back to Main Menu", "New", "Resume", "Browse", "Open Daily Note"]
     while True:
         print_options(options, "Start")
         try:
@@ -301,7 +396,13 @@ def prompt_start():
                     case "Back to Main Menu":
                         break
                     case "New":
-                        open_editor("")
+                        # ask for filename (accept path or directory)
+                        file_name = input("Enter new file name (or pass empty message to cancel): ")
+                        if file_name:
+                            create_new_file_if_needed(os.path.join(get_current_dir(), file_name).replace("\\","/"))
+                        else:
+                            print("\nCanceled commit.")
+                        # open_editor("")
                     case "Resume":
                         prompt_resume()
                     case "Browse":
@@ -310,35 +411,30 @@ def prompt_start():
                         if not is_daily_notes_enabled():
                             print("\nDaily Notes disabled. See Main Menu -> Settings to enable this feature.")
                         else:
-                            root = get_daily_notes_dir()
-                            # root/YYYY-MM
-                            date_path = f"{root}/{datetime.year}/{datetime.now().strftime('%Y-%m')}"
-                            # root/YYYY-MM/YYYY-MM-DD.md
-                            note_path = f"{date_path}/{datetime.now().strftime('%F')}.md"
-                            # if file already exists, open in editor
-                            if is_existing_path(note_path):
-                                open_editor(note_path)
-                            else:
-                                try:
-                                    # if folder path doesn't exist, prompt
-                                    if not is_existing_path(date_path):
-                                        prompt_new_directory(date_path)
-                                        # Only create new daily note if prompt completed successfully
-                                        if is_existing_path(note_path):
-                                            subprocess.run(["touch", note_path], check=True, capture_output=True)
-                                        else:
-                                            print(f"\nCancelled daily note creation.")
-                                            break
-                                    open_editor(note_path)
-                                except subprocess.CalledProcessError as e:
-                                    print(f"\nError while creating new daily note: {e}")
+                            root = get_daily_notes_path()
+                            now = datetime.now().strftime("%F")
+                            # ['YEAR', 'MONTH', 'DAY'] 
+                            date_arr = now.split("-")
+                            day = date_arr[2]
+                            year_month = f"{date_arr[0]}-{date_arr[1]}"
+                            note_filename = f"{date_arr[0]}-{date_arr[1]}-{date_arr[2]}.md"
+                            # root/YEAR/YEAR-MONTH/YEAR-MONTH-DAY.md
+                            full_note_path = os.path.join(root, date_arr[0], year_month, note_filename)
+                            create_new_file_if_needed(full_note_path)
                     case _:
                         raise IndexError()
         except (ValueError, IndexError):
             print("\nInvalid input.")
 
 def prompt_resume():
-    files = subprocess.getoutput("git status -s -u | cut -c4-").splitlines()
+    files = []
+    # Cut leading status letter (e.g. "M")
+    if (get_platform() == "Unix"):
+        files = subprocess.getoutput("git status -s -u | cut -c4-").splitlines()
+    # TODO: test if this else case works on other platforms
+    else:
+        statuses = subprocess.getoutput("git status -s -u").splitlines()
+        files = [file[3:] for file in statuses] 
     if not files:
         return
     else:
@@ -470,7 +566,7 @@ def prompt_stash_menu():
                     break
                 case "Apply Stash":
                     if not repo_has_stashes():
-                        print("There are no stashes in this repository.")
+                        print("There are no stashes in this repo.")
                     else:
                         print("Note: This will apply the stored copy of the stash and preserve it in the local tree.")
                         stash_options = ["Back to Main Menu"] + stashes_trim
@@ -490,7 +586,7 @@ def prompt_stash_menu():
                                 continue
                 case "Pop Stash":
                     if not repo_has_stashes():
-                        print("There are no stashes in this repository.")
+                        print("There are no stashes in this repo.")
                     else:
                         print("Note: This will apply the stored copy of the selected stash and remove it from the local tree.")
                         stash_options = ["Back to Main Menu"] + stashes_trim
@@ -510,7 +606,7 @@ def prompt_stash_menu():
                                 continue
                 case "Drop Stash":
                     if not repo_has_stashes():
-                        print("There are no stashes in this repository.")
+                        print("There are no stashes in this repo.")
                     else:
                         print("Note: This will drop the stored copy of the selected stash.")
                         stash_options = ["Back to Main Menu"] + stashes_trim
@@ -560,12 +656,19 @@ def prompt_stash_menu():
 def prompt_select_commit():
     limit = get_commit_limit()
     print("\n[Commits]")
-    git(f"log --oneline --all -n {limit}")
-    commits = subprocess.getoutput(f"git log --oneline --all -n {limit} | cut -c -7").splitlines()
+    git(f"log --oneline --all -n {limit}") 
+    hashes = []
+    # Cut everything after commit hash
+    if (get_platform() == "Unix"):
+        hashes = subprocess.getoutput(f"git log --oneline --all -n {limit} | cut -c -7").splitlines()
+    # TODO: test if this case works on other platforms
+    else:
+        commits = subprocess.getoutput(f"git log --oneline --all -n {limit}").splitlines()
+        hashes = [c[:7] for c in commits]
     if not commits:
         return
     else:
-        options = ["Back to Main Menu"] + commits
+        options = ["Back to Main Menu"] + hashes
         while True:
             print("\n[Select Commit]")
             for i, commit in enumerate(options):
@@ -633,21 +736,19 @@ def prompt_settings():
                 case "Back to Main Menu":
                     break
                 case "Browser":
-                    current_browser = get_browser()
                     new_browser = input("Set new default browser (or pass empty message to cancel): ")
                     if new_browser:
-                        set_browser(new_browser)
+                        set_app(new_browser, "browser")
                     else:
-                        print(f"\nBrowser kept at: {current_browser}")
+                        print(f"\nCanceled. Keep current browser: '{get_browser()}'")
                 case "Editor":
-                    current_editor = get_editor()
                     new_editor = input("Set new default editor (or pass empty message to cancel): ")
                     if new_editor:
-                        set_editor(new_editor)
+                        set_app(new_editor, "editor")
                     else:
-                        print(f"\nEditor kept at: {current_editor}")
+                        print(f"\nCanceled. Keep current editor: '{get_editor()}'")
                 case "Daily Notes":
-                    dn_options = ["Back to Settings", "Enable", "Disable", "Format"]
+                    dn_options = ["Back to Settings", "Enable", "Disable", "Path"]
                     while True:
                         print("\n[Daily Notes]")
                         for i, dn_opt in enumerate(dn_options):
@@ -658,35 +759,27 @@ def prompt_settings():
                                 case "Back to Settings":
                                     break
                                 case "Enable":
-                                    set_daily_notes_status("true")
+                                    set_daily_notes_status("on")
                                 case "Disable":
-                                    set_daily_notes_status("false")
-                                case "Format":
-                                    current_path = get_daily_notes_dir()
-                                    new_path = input("Set new daily notes path (or pass empty message to cancel): ")
-                                    if current_path.capitalize() == new_path.capitalize():
-                                        print(f"\nPath reference '{new_path}' matches current path '{current_path}'. No change necessary.")
-                                    elif new_path and not is_existing_path(new_path):
-                                        prompt_new_directory(new_path)
-                                        # Only proceed to set path if directory was created properly
-                                        if is_existing_path(new_path):
-                                            set_daily_notes_path(new_path)
-                                        else:
-                                            print(f"\nDid not set new path. Keep path at: {current_path}")
+                                    set_daily_notes_status("off")
+                                case "Path":
+                                    new_path = input("Set new Daily Notes path (or pass empty message to cancel): ")
+                                    if new_path:
+                                        create_new_directory_if_needed(new_path)
                                     else:
-                                        print(f"\nDaily notes path kept at: {current_path}")  
+                                        print(f"\nCanceled. Keep current path: '{current_path}'")  
                                 case _:
                                     raise IndexError
                         except (ValueError, IndexError):
                             print("\nInvalid input.")
                             continue
                 case "Commit Limit":
-                    current_limit = get_commit_limit()
                     new_limit = input("Set new commit display limit (or pass empty message to cancel): ")
                     if new_limit:
                         set_commit_limit(new_limit)
                     else:
-                        print(f"\nCommit display limit kept at: {current_limit}")
+                        print(f"\nCanceled. Keep current display limit: {get_commit_limit()}")
+                        continue
                 case _:
                     raise IndexError
         except (ValueError, IndexError):
