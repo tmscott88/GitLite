@@ -7,7 +7,7 @@ from shutil import which
 from datetime import datetime
 
 __parser = configparser.ConfigParser()
-__version_num = "0.8.3-alpha4"
+__version_num = "0.8.3-alpha5"
 __config = "config.ini"
 
 def main():
@@ -165,7 +165,7 @@ def is_existing_file(path):
 def is_existing_directory(dir):
     return bool(os.path.isdir(dir))
 
-def create_new_file_if_needed(new_path):
+def create_new_file(new_path):
     # if file nor (conflicting) directory exist, create the file
     if not is_existing_file(new_path) and not is_existing_directory(new_path):
         try:
@@ -178,10 +178,11 @@ def create_new_file_if_needed(new_path):
             os.makedirs(os.path.dirname(new_path), exist_ok=True)
             # Create the file
             f = open(new_path, 'w')
+            print(f"\nCreated file {new_path}.")
         except subprocess.CalledProcessError as e:
             print(f"\nError creating file '{new_path}'. {e}")
             return
-        # Only open editor if directory was created properly from the previous step
+        # Only open editor if file was created properly from the previous step
         if is_existing_file(new_path):
             open_editor(new_path)
         else:
@@ -189,18 +190,20 @@ def create_new_file_if_needed(new_path):
     # if file doesn't exist but conflicting folder exists
     elif not is_existing_file(new_path):
         print(f"\nA folder '{new_path}' already exists in this directory. Please choose a different file name or path.")
+    # file already exists, just open
     else:
+        print(f"\nFile '{new_path}' already exists. Opening...")
         open_editor(new_path)
 
-def create_new_directory_if_needed(new_path):
+def create_new_directory(new_path):
     # if path doesn't exist, create the directory
     if not is_existing_directory(new_path) and not is_existing_file(new_path):
-        # prompt_create_directory(new_path)
         try:
             # TODO test path normalization
-            os.makedirs(new_path)
+            os.makedirs(new_path, exist_ok=True)
             if is_existing_directory(new_path):
                 set_daily_notes_path(new_path)
+                
             else:
                 print(f"\nPath creation failed. Keep current path: '{get_daily_notes_path()}'.")
                 return
@@ -275,23 +278,42 @@ def print_config_error():
     print(f"\nSee the included README or visit https://github.com/tmscott88/GitLite/blob/main/README.md for further instructions.")
 
 def open_browser():
-    browser = get_browser()
-    try:
-        subprocess.run(browser, check=True)
-    except subprocess.CalledProcessError:
-        print_app_error(browser)
+    if not has_valid_config():
+        # open default system editor
+        # TODO work on this
+        # if get_platform() == "Windows":
+        #     os.startfile(fpath, "open")
+        return
+    else: 
+        browser = get_browser()
+        try:
+            if (which(browser)) is None:
+                raise FileNotFoundError
+            else:
+                 subprocess.run(browser, check=True)
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            print_app_error(browser)
+        except Exception as e:
+            print(f"\nError while opening '{browser}'. {e}")
         
 def open_editor(fpath):
     if not has_valid_config():
         # open default system editor
-        if get_platform() == "Windows":
-            os.startfile(fpath, "open")
+        # TODO work on this
+        # if get_platform() == "Windows":
+        #     os.startfile(fpath, "open")
+        return
     else: 
         editor = get_editor()
         try:
-            subprocess.run(f"{editor} {fpath}", check=True)
-        except subprocess.CalledProcessError:
+            if (which(editor)) is None:
+                raise FileNotFoundError
+            else:
+                 subprocess.run(f"{editor} {fpath}", check=True)
+        except (FileNotFoundError, subprocess.CalledProcessError):
             print_app_error(editor)
+        except Exception as e:
+            print(f"\nError while opening '{editor}'. {e}")
 
 def open_daily_note(fpath):
     daily_notes_dir = get_daily_notes_path()
@@ -361,6 +383,7 @@ def main_menu():
                         prompt_select_commit()
                     case "Settings":
                         if not has_valid_config():
+                            print("\nError: Settings menu disabled due to the lack of a valid config file.")
                             print_config_error()
                         else:
                             prompt_settings()
@@ -379,12 +402,12 @@ def main_menu():
 
 # PROMPT FUNCTIONS
 def prompt_start():
-    options = ["Back to Main Menu", "New", "Resume", "Browse"]
+    options = ["Back to Main Menu", "New File", "Resume", "Browse"]
     if not has_valid_config():
         print_config_error()
     else:
         if is_daily_notes_enabled():
-            options = ["Back to Main Menu", "New", "Resume", "Browse", "Open Daily Note"]
+            options = ["Back to Main Menu", "New File", "Resume", "Browse", "Open Daily Note"]
     while True:
         print_options(options, "Start")
         try:
@@ -395,14 +418,13 @@ def prompt_start():
                 match options[choice]:
                     case "Back to Main Menu":
                         break
-                    case "New":
+                    case "New File":
                         # ask for filename (accept path or directory)
                         file_name = input("Enter new file name (or pass empty message to cancel): ")
                         if file_name:
-                            create_new_file_if_needed(os.path.join(get_current_dir(), file_name).replace("\\","/"))
+                            create_new_file(os.path.join(get_current_dir(), file_name).replace("\\","/"))
                         else:
-                            print("\nCanceled commit.")
-                        # open_editor("")
+                            print("\nCanceled new file.")
                     case "Resume":
                         prompt_resume()
                     case "Browse":
@@ -420,7 +442,7 @@ def prompt_start():
                             note_filename = f"{date_arr[0]}-{date_arr[1]}-{date_arr[2]}.md"
                             # root/YEAR/YEAR-MONTH/YEAR-MONTH-DAY.md
                             full_note_path = os.path.join(root, date_arr[0], year_month, note_filename)
-                            create_new_file_if_needed(full_note_path)
+                            create_new_file(full_note_path)
                     case _:
                         raise IndexError()
         except (ValueError, IndexError):
@@ -765,7 +787,7 @@ def prompt_settings():
                                 case "Path":
                                     new_path = input("Set new Daily Notes path (or pass empty message to cancel): ")
                                     if new_path:
-                                        create_new_directory_if_needed(new_path)
+                                        create_new_directory(new_path)
                                     else:
                                         print(f"\nCanceled. Keep current path: '{current_path}'")  
                                 case _:

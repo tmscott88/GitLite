@@ -8,7 +8,9 @@ See below for what has been successfully ported from `start.sh` -> `gitlite.py`,
 - [x] Improve Settings menu to mimic `config.ini` structure. See `README.md` for the new base config file.
 - [x] Remove unnecessary shell calls
 - [x] Improve error when an app cannot be found or crashes on execution.
+- [] Keep the app as flexible as possible, even without a valid config file. Use reasonable defaults, perhaps offer to create the config.ini file with pre-populated vallues. Upload to the repo without including it in tracking.
 
+- [?] CRITICAL: prevent GitLite from attempting to load app when invalid app reference is set in `config.ini` (i.e. by manual intervention, a previous session) outside of the Settings Menu.
 - [] Cross-platform fixes (Windows, macOS, Linux)
 - [] Improve/clarify initial arguments
 
