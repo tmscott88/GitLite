@@ -678,10 +678,13 @@ def prompt_create_stash():
                         print("\nCanceled stash.")
                     break
                 case "Stash Staged":
-                    message = input("Enter stash message (or pass empty message to cancel): ")
-                    if message:
-                        run(['git', 'stash', 'push', '--staged', '-m', f"{message}"], "Stashed all staged changes.")
-                    break
+                    if not repo_has_staged_changes():
+                        print("\nNo staged changes to stash. Please stage changes first.")
+                    else:
+                        message = input("Enter stash message (or pass empty message to cancel): ")
+                        if message:
+                            run(['git', 'stash', 'push', '--staged', '-m', f"{message}"], "Stashed all staged changes.")
+                        break
                 case _:
                     IndexError
         except (ValueError, IndexError):
@@ -690,7 +693,7 @@ def prompt_create_stash():
 def prompt_stash_menu():
     back_stash_menu = "Back to Stash Menu"
     stashes = subprocess.check_output(['git', 'stash', 'list'], text=True).splitlines()
-    stashes_trim = [x.split(":")[0] for x in stashes]
+    names = [x.split(":")[0] for x in stashes]
     print_stashes()
     options = ["Back to Main Menu", "Create Stash", "Apply Stash", "Pop Stash", "Drop Stash"]
     while True:
@@ -713,16 +716,18 @@ def prompt_stash_menu():
                         print("There are no stashes in this repo.")
                     else:
                         print("Note: This will apply the stored copy of the stash and preserve it in the local tree.")
-                        stash_options = ["Back to Main Menu"] + stashes_trim
+                        stash_options = ["Back to Main Menu"] + names
                         while True:
-                            for i, stash in enumerate(stashes_trim):
+                            for i, stash in enumerate(stash_options):
                                 print(f"{i+1}. {stash}")
                             try:
                                 stash_choice = int(input("Choose an option: ")) - 1
-                                if stash_choice not in range(0, len(stashes_trim)):
+                                if stash_choice not in range(0, len(stash_options)):
                                     raise ValueError()
+                                elif stash_choice == 0:
+                                    break
                                 else:
-                                    stash = stashes_trim[stash_choice]
+                                    stash = stash_options[stash_choice]
                                     run(['git', 'stash', 'apply', stash], f"Applied stash {stash} onto working tree.")
                                     break
                             except (ValueError, IndexError):
@@ -733,16 +738,18 @@ def prompt_stash_menu():
                         print("There are no stashes in this repo.")
                     else:
                         print("Note: This will apply the stored copy of the selected stash and remove it from the local tree.")
-                        stash_options = ["Back to Main Menu"] + stashes_trim
+                        stash_options = ["Back to Main Menu"] + names
                         while True:
-                            for i, stash in enumerate(stashes_trim):
+                            for i, stash in enumerate(stash_options):
                                 print(f"{i+1}. {stash}")
                             try:
                                 stash_choice = int(input("Choose an option: ")) - 1
-                                if stash_choice not in range(0, len(stashes_trim)):
+                                if stash_choice not in range(0, len(stash_options)):
                                     raise ValueError()
+                                elif stash_choice == 0:
+                                    break
                                 else:
-                                    stash = stashes_trim[stash_choice]
+                                    stash = stash_options[stash_choice]
                                     run(['git', 'stash', 'pop', stash], f"Popped stash {stash} onto working tree.")
                                     break
                             except (ValueError, IndexError):
@@ -753,35 +760,34 @@ def prompt_stash_menu():
                         print("There are no stashes in this repo.")
                     else:
                         print("Note: This will drop the stored copy of the selected stash.")
-                        stash_options = ["Back to Main Menu"] + stashes_trim
+                        stash_options = ["Back to Main Menu"] + names
                         while True:
-                            for i, stash in enumerate(stashes_trim):
+                            for i, stash in enumerate(stash_options):
                                 print(f"{i+1}. {stash}")
                             try:
                                 stash_choice = int(input("Choose an option: ")) - 1
-                                if stash_choice not in range(0, len(stashes_trim)):
+                                if stash_choice not in range(0, len(stash_options)):
                                     raise ValueError()
+                                elif stash_choice == 0:
+                                    break
                                 else:
-                                    stash = stashes_trim[stash_choice]
+                                    stash = stash_options[stash_choice]
                                     print(f"\nDrop stash {stash}? THIS STASH WILL BE DISCARDED!")
-                                    drop_confirm_options = ["Yes", "No"]
+                                    drop_confirm = ["Yes", "No"]
                                     while True:
-                                        for i, opt in enumerate(drop_confirm_options):
+                                        for i, opt in enumerate(drop_confirm):
                                             print(f"{i+1}. {opt}")
                                         try:
                                             drop_choice = int(input("Choose an option: ")) - 1
-                                            if drop_choice not in range(0, len(stashes_trim)):
-                                                raise ValueError()
-                                            else:
-                                                drop_opt = {stashes_trim[stash_choice]}
-                                                match drop_opt:
-                                                    case "Yes":
-                                                        run(['git', 'stash', 'drop', drop_opt], f"Dropped stash {drop_opt} from repository.")
-                                                        break
-                                                    case "No":
-                                                        break
-                                                    case _:
-                                                        raise IndexError
+                                            drop_opt = drop_confirm[drop_choice]
+                                            match drop_opt:
+                                                case "Yes":
+                                                    run(['git', 'stash', 'drop', stash], f"Dropped stash {stash} from repository.")
+                                                    break
+                                                case "No":
+                                                    break
+                                                case _:
+                                                    raise IndexError
                                         except (ValueError, IndexError):
                                             print("\nInvalid input.")
                                             continue
@@ -864,24 +870,27 @@ def prompt_reset_again(reset_arg, commit):
             reset_label = "Soft"
         case "--hard":
             reset_label = "Hard"
-    reset_options = ["Yes", "No"]
+    reset_confirm = ["Yes", "No"]
     while True:
-        for i, reset_opt in enumerate(reset_options):
+        for i, reset_opt in enumerate(reset_confirm):
             print(f"{i+1}. {reset_opt}")
         try:
             reset_choice = int(input("Choose an option: ")) - 1
-            reset_opt = reset_options[reset_choice]
-            if reset_opt == "Yes":
-                run(['git', 'reset', reset_arg, commit], f"{reset_label} reset to commit {commit}.")
-                # FALLBACK
-                limit = -1
-                config_limit = get_commit_limit()
-                if (has_valid_config and config_limit != -1):
-                    limit = config_limit
-                print_commits(limit)
-                break
-            elif reset_opt == "No":
-                break
+            reset_opt = reset_confirm[reset_choice]
+            match reset_opt:
+                case "Yes":
+                    run(['git', 'reset', reset_arg, commit], f"{reset_label} reset to commit {commit}.")
+                    # FALLBACK
+                    limit = -1
+                    config_limit = get_commit_limit()
+                    if (has_valid_config and config_limit != -1):
+                        limit = config_limit
+                    print_commits(limit)
+                    break
+                case "No":
+                    break
+                case _:
+                    raise IndexError
         except (ValueError, IndexError):
             print("\nInvalid input.")
             continue

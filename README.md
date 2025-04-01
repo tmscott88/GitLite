@@ -9,13 +9,15 @@
 ## Usage
 
 Using the executable
+
 - Place the **GitWriting-X.X.X** executable in the root directory of your local Git repository. Add an appropriate pattern to your repository's `.gitignore`, i.e. `*GitWriting`
 - Launch the executable.
 
 Using the script
-- Place the **gitwriting.py** script in the root directory of your local Git repository. Add an appropriate pattern to your repository's `.gitignore` if you don't want the app committed, i.e. `*GitWriting
+
+- Place the **gitwriting.py** script in the root directory of your local Git repository. Add an appropriate pattern to your repository's `.gitignore` if you don't want the app committed, i.e. `*GitWriting*`
 - Run: `./gitwriting.py [-OPTION]`
-  - If the script won't execute, update its permissions to be executable: `chmod +x gitwriting.py` 
+  - If the script won't execute, update its permissions to be executable: `chmod +x gitwriting.py`
 - Options: `[-h | --help | -H]` `[-o | --options | -O]` `[-v | --version | -V]`
 
 Note: A `config.ini` configuration file must be created and placed in the repo's root directory (alongside the **GitWriting** executable) in order to save and read app settings. certain features will be limited or blocked. See below for a working template.
@@ -72,7 +74,7 @@ Inspired by Obsidian, Daily Notes allow you to quickly create a diary within you
 ### Settings Menu
 
 - Configure default browser, editor apps
-- Enable/disable Daily Notes 
+- Enable/disable Daily Notes
 - Set default folder to create Daily Notes from
 - Set max number of commits to display in menus where `git log...` is used
 
