@@ -10,3 +10,6 @@
 **/.vscode
 # Rucola Notes
 **/*.html
+
+# Other
+**/.DS_Store
