@@ -32,7 +32,7 @@ def main():
                 print_config()
                 print()
         elif option in ("-v", "--version", "-V"):
-            print(f"Gitlite {__version_num}")
+            print(f"GitWriting {__version_num}")
         else:
             print(f"\nUnknown Option: {option}")
             print(usage_desc)
@@ -357,9 +357,9 @@ def is_daily_notes_enabled():
     return bool(status == "on")
 
 def print_splash():
-    print(f"\n[GitLite {__version_num}]")
+    print(f"\n[GitWriting {__version_num}]")
     print("Author: Tom Scott (tmscott88)")
-    print("https://github.com/tmscott88/GitLite")
+    print("https://github.com/tmscott88/GitWriting")
 
 def print_config():
     for section in __parser.sections():
@@ -392,18 +392,18 @@ def print_app_error(name):
     print(f"\nApp '{name}' not found, or '{name}' just crashed. This may be due to a missing reference/installation, or perhaps something is wrong with {name}'s configuration.") 
     print(f"\nEnsure that the app's reference name is defined correctly in '{__config}' and installed systemwide.") 
     print(f"\nConsult {name}'s documentation and/or forums for more information.")
-    print(f"\nIf '{name}' works fine outside of GitLite, and you are still experiencing issues here, please open an issue at:")
-    print("\nhttps://github.com/tmscott88/GitLite/issues")
+    print(f"\nIf '{name}' works fine outside of GitWriting, and you are still experiencing issues here, please open an issue at:")
+    print("\nhttps://github.com/tmscott88/GitWriting/issues")
 
 # def print_config_corrupt_error():
 #     print(f"\nWarning: Config file '{__config}' has corrupt or missing properties. Functionality will be limited until this is resolved.") 
 #     # print(f"\nPlease create and place `{__config}' in your Git repo's root directory.")
-#     print(f"\nSee the included README or visit https://github.com/tmscott88/GitLite/blob/main/README.md for further instructions.")
+#     print(f"\nSee the included README or visit https://github.com/tmscott88/GitWriting/blob/main/README.md for further instructions.")
 
 def print_config_not_found_error():
     print(f"\nWarning: Config file '{__config}' not found. Functionality will be limited until this is resolved.") 
     print(f"\nPlease create and place `{__config}' in your Git repo's root directory.")
-    print(f"\nSee the included README or visit https://github.com/tmscott88/GitLite/blob/main/README.md for further instructions.")
+    print(f"\nSee the included README or visit https://github.com/tmscott88/GitWriting/blob/main/README.md for further instructions.")
 
 def run(command_args, message):
     try:
