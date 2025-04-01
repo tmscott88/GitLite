@@ -9,24 +9,28 @@ from shutil import which
 from datetime import datetime
 
 __parser = configparser.ConfigParser()
-__version_num = "0.8.3-7"
+__version_num = "0.8.3-8"
 __config = "config.ini"
 
 def main():
-    parser_desc = f"Settings are defined in '{__config}'. See 'README.md' for a template config file."
-    options_desc = "Options: [-h | --help | -H] [-o | --options | -O] [-v | --version | -V]"
-    usage_desc = f"Usage: python3 | py {os.path.basename(__file__)} [-OPTION]"
+    options_desc = "[Options] \nHelp: [-h | --help | -H] \nCheck Config: [-c | --config | -C] \nVersion: [-v | --version | -V]"
+    usage_desc = f"\n[Usage] \n./{os.path.basename(__file__)} [OPTION]\n"
+    parser_desc = f"\nSettings are defined in '{__config}'. See 'README.md' for a template config file."
 
     # Launch arguments
     while len(sys.argv) > 1:
         option = sys.argv[1]
         if option in ("-h", "--help", "-H"):
-            print(parser_desc)
             print(usage_desc)
             print(options_desc)
-        elif option in ("-o", "--options", "-O"):
-            if has_valid_config():
+            print(parser_desc)
+        elif option in ("-c", "--config", "-C"):
+            if not has_valid_config():
+                print_config_not_found_error()
+            else:
+                print(f"\n> {__config}")
                 print_config()
+                print()
         elif option in ("-v", "--version", "-V"):
             print(f"Gitlite {__version_num}")
         else:
@@ -323,6 +327,7 @@ def print_config_not_found_error():
     print(f"\nPlease create and place `{__config}' in your Git repo's root directory.")
     print(f"\nSee the included README or visit https://github.com/tmscott88/GitLite/blob/main/README.md for further instructions.")
 
+# TODO create custom CLI browser, maybe a menu similar to the Log() screen
 def open_browser():
     if not has_valid_config():
         open_system_browser()
@@ -433,7 +438,7 @@ def main_menu():
                         prompt_start()
                     case "Status":
                         run(['git', 'fetch'], "")
-                        print("\n[Remote]") 
+                        print("\n[Status]") 
                         run(['git', 'status'], "")
                     case "Log":
                         prompt_log()
@@ -456,16 +461,16 @@ def main_menu():
                             prompt_commit()
                     case "Stash":
                         print("\nStash menu coming soon.")
-                        # if file_has_changes(__file__):
-                        #     print("\nCannot safely stash because this script has been modified. Please commit this script first.")
-                        #     continue
-                        # if not (repo_has_changes() or repo_has_stashes()):
-                        #     print("\nNo changes to stash. No stashes to apply. Cannot proceed.")
-                        # elif repo_has_changes() and not repo_has_stashes():
-                        #     print("\nNo stashes found. Create a stash?")
-                        #     prompt_create_stash()
-                        # else:
-                        #     prompt_stash_menu() 
+                        if file_has_changes(__file__):
+                            print("\nCannot safely stash because this script has been modified. Please commit this script first.")
+                            continue
+                        if not (repo_has_changes() or repo_has_stashes()):
+                            print("\nNo changes to stash. No stashes to apply. Cannot proceed.")
+                        elif repo_has_changes() and not repo_has_stashes():
+                            print("\nNo stashes found. Create a stash?")
+                            prompt_create_stash()
+                        else:
+                            prompt_stash_menu() 
                     case "Revert":
                         run(['git', 'checkout', '-p'], "")
                     case "Discard":
@@ -500,12 +505,13 @@ def main_menu():
 
 # PROMPT FUNCTIONS
 def prompt_start():
-    options = ["Back to Main Menu", "New File", "Resume", "Browse"]
+    # TODO name these better lol
+    options = ["Back to Main Menu", "New/Open", "Open Recent", "Browse"]
     if not has_valid_config():
         print_config_not_found_error()
     else:
         if is_daily_notes_enabled():
-            options = ["Back to Main Menu", "New File", "Resume", "Browse", "Open Daily Note"]
+            options = ["Back to Main Menu", "New/Open", "Open Recent" "Browse", "Open Daily Note"]
     while True:
         print_options(options, "Start")
         try:
@@ -516,14 +522,14 @@ def prompt_start():
                 match options[choice]:
                     case "Back to Main Menu":
                         break
-                    case "New File":
+                    case "New/Open":
                         # ask for filename (accept path or directory)
                         file_name = input("Enter new file name (or pass empty message to cancel): ")
                         if file_name:
                             create_new_file(os.path.join(get_current_dir(), file_name).replace("\\","/"))
                         else:
                             print("\nCanceled new file.")
-                    case "Resume":
+                    case "Open Recent":
                         prompt_resume()
                     case "Browse":
                         open_browser()
@@ -547,6 +553,8 @@ def prompt_start():
             print("\nInvalid input.")
 
 def prompt_resume():
+    # TODO: make switch flag in this menu set to "Last Modified" or "In Working Tree", reload menu based on toggle
+    #   Also create new config setting
     files = []
     # Cut leading status letter (e.g. "M")
     try:

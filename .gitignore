@@ -15,4 +15,4 @@
 **/.DS_Store
 
 # Ignore build binaries
-**/GitLite*
+**GitWriting*
