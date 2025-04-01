@@ -7,7 +7,7 @@ from shutil import which
 from datetime import datetime
 
 __parser = configparser.ConfigParser()
-__version_num = "0.8.3-alpha5"
+__version_num = "0.8.3-alpha6"
 __config = "config.ini"
 
 def main():
@@ -36,14 +36,15 @@ def main():
 
     # Post-options flow
     print_splash()
+    # TODO testing macOS package not finding proper directories
     if not is_valid_repo():
-        print(f"\nError: Could not resolve Git repo from the current folder.") 
+        print(f"\nError: Could not resolve a valid Git repo from the current folder.") 
         print("\nPlease place this executable in your Git repo's root directory.")
         prompt_exit()
     else:
         # initial config verification
         if not has_valid_config():
-            print_config_error()
+            print_config_not_found_error()
         print_stashes()
         print_changes()
         main_menu()
@@ -51,11 +52,11 @@ def main():
 # check if we're inside a valid git repo
 def is_valid_repo():
     try:
-        git_root = subprocess.check_output("git rev-parse --show-toplevel", text=True).strip()
+        git_root = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip()
         script_dir = get_current_dir()
         # match the path seperators
-        print(f"Git Root: {git_root}")
-        print(f"Script Dir: {script_dir}")
+        # print(f"\n(DEBUG) Git Root: {git_root}")
+        # print(f"(DEBUG) Script Dir: {script_dir}")
         return bool(git_root == script_dir)
     except subprocess.CalledProcessError:   
         print("\nPlease place this executable in your Git repo's root directory.")
@@ -72,13 +73,20 @@ def has_valid_config():
         print(f"\nError while reading config file {__config}: {e}")
     return False
 
-def save_config(message):
+# def has_valid_sections():
+#     for section in __parser.sections():
+#         # TODO: check if section is within valid "Sections" enum
+#         for key, value in __parser.items(section):
+#             # TODO: check if key, value matches expected format? Key match is most important
+#             print(f"{key} = {value}")
+
+def save_to_config(message):
     try:
         with open(__config, "w", encoding="utf-8") as newfile:
             __parser.write(newfile)
         print(f"\n{message}")
     except Exception as e:
-        print(f"\nError while saving to config file {newfile}: {e}")
+        print(f"\nError while saving to config file '{newfile}': {e}")
 
 def get_platform():
     match(os.name):
@@ -101,35 +109,48 @@ def prompt_exit():
 
 # Parser getters
 def get_browser():
-    return __parser.get('APPS', 'browser')
+    try:
+        return __parser.get('APPS', 'browser')
+    except Exception as e:
+        print(f"\nError while retrieving browser from '{__config}'. {e}")
+        print(f"\nPlease check '{__config}' or visit Main Menu -> Settings to configure a valid browser.")
+
 
 def get_editor():
-    return __parser.get('APPS', 'editor')
+    try:
+        return __parser.get('APPS', 'editor')
+    except Exception as e:
+        print(f"\nError while retrieving editor from '{__config}'. {e}")
+        print(f"\nPlease check '{__config}' or visit Main Menu -> Settings to configure a valid editor.")
 
 def get_commit_limit():
-    return __parser.get('MISC', 'commit_limit')
+    try:
+        return __parser.get('MISC', 'commit_limit')
+    except Exception as e:
+        print(f"\nError while retrieving commit limit from '{__config}'. {e}")
+        print(f"\nPlease check '{__config}' or visit Main Menu -> Settings to configure a valid limit.")
 
 def get_daily_notes_status():
-    return __parser.get('DAILY_NOTES', 'status')
+    try:
+        return __parser.get('DAILY_NOTES', 'status')
+    except Exception as e:
+        print(f"\nError while retrieving daily notes status from '{__config}'. {e}")
+        print(f"\nPlease check '{__config}' or visit Main Menu -> Settings to configure a valid status.")
 
 def get_daily_notes_path():
-    return __parser.get('DAILY_NOTES', 'path')
+    try:
+        return __parser.get('DAILY_NOTES', 'path')
+    except Exception as e:
+        print(f"\nError while retrieving commit daily notes path from '{__config}'. {e}")
+        print(f"\nPlease check '{__config}' or visit Main Menu -> Settings to configure a valid path.")
 
 def set_app(new_app, app_type):
-    # if get_platform() == "Windows":
-    #     path_check = subprocess.getoutput(["where", new_app])
-    #     print(f"(WIN) Shutils 'where': {which(new_app)}")
-    #     print(f"(WIN) Subprocess path_check 'where': {path_check}")
-    # else:
-    #     path_check = subprocess.getoutput(["which", new_app])
-    #     print(f"Shutils 'which': {which(new_app)}")
-    #     print(f"Subprocess 'which': {path_check}")
     try:
         if (which(new_app)) is None:
             raise FileNotFoundError
         else:
             __parser.set('APPS', app_type, new_app)
-            save_config(f"Updated {app_type}: {new_app}")
+            save_to_config(f"Set {app_type}: {new_app}")
     except FileNotFoundError:
         print_app_error(new_app)
     except Exception as e:
@@ -144,20 +165,26 @@ def set_commit_limit(new_limit):
     else:
         try:
             __parser.set('MISC', 'commit_limit', new_limit)
-            save_config(f"Updated commit limit: {new_limit}")
+            save_to_config(f"Set commit limit: {new_limit}")
         except Exception as e:
-            print(f"\nError while setting commit limit {new_limit}. {e}")
+            print(f"\nError while setting commit limit '{new_limit}'. {e}")
 
 def set_daily_notes_status(new_status):
     if (new_status == "on" or new_status == "off"):
-        __parser.set('DAILY_NOTES', 'status', new_status)
-        save_config(f"Set Daily Notes: {"On" if new_status == "on" else "Off"}")
+        try:
+            __parser.set('DAILY_NOTES', 'status', new_status)
+            save_to_config(f"Set Daily Notes: {"On" if new_status == "on" else "Off"}")
+        except Exception as e:
+            print(f"\nError while setting daily notes status: {e}")
     else:
-        print(f"\nUnexpected status {new_status}. Status must be 'on' or 'off'.")
+        print(f"\nUnexpected status '{new_status}'. Status must be 'on' or 'off'.")
 
 def set_daily_notes_path(new_path):
-    __parser.set('DAILY_NOTES', 'path', new_path)
-    save_config(f"Updated daily notes path: {new_path}")
+    try:
+        __parser.set('DAILY_NOTES', 'path', new_path)
+        save_to_config(f"Set daily notes path: {new_path}")
+    except Exception as e:
+        print(f"\nError while setting daily notes path: {e}")
 
 def is_existing_file(path):
     return bool(os.path.isfile(path))
@@ -219,19 +246,23 @@ def create_new_directory(new_path):
 # HELPER FUNCTIONS
 
 def file_has_changes(fpath):
-    status = subprocess.getoutput(f"git status {fpath} --short")
+    status = subprocess.check_output(['git', 'status', fpath, '--short'])
     return bool(status)
 
+def repo_has_commits():
+    commits = subprocess.check_output(['git', 'log', '--oneline', '-n', '1'])
+    return bool(commits)
+
 def repo_has_changes():
-    changes = subprocess.getoutput("git status --porcelain")
+    changes = subprocess.check_output(['git', 'status', '--porcelain'])
     return bool(changes)
 
 def repo_has_staged_changes():
-    staged = subprocess.getoutput("git diff --name-status --cached")
+    staged = subprocess.check_output(['git', 'diff', '--name-status', '--cached'])
     return bool(staged)
 
 def repo_has_stashes():
-    stashes = subprocess.getoutput("git stash list")
+    stashes = subprocess.check_output(['git', 'stash', 'list'])
     return bool(stashes)
 
 def is_daily_notes_enabled():
@@ -250,15 +281,20 @@ def print_config():
         for key, value in __parser.items(section):
             print(f"{key} = {value}")
 
+def print_commits(limit):
+    if repo_has_commits():
+        print("\n[Commits]")
+        run(['git', 'log', '--oneline', '--all', '--decorate', '-n', f"{limit}"], "")
+
 def print_changes():
     if repo_has_changes():
         print("\n[Changes]")
-        git("status -s -u")
+        run(['git', 'status', '-s', '-u'], "")
 
 def print_stashes():
     if repo_has_stashes():
         print("\n[Stashes]")
-        git("stash list")
+        run(['git', 'stash', 'list'], "")
 
 def print_options(options, title):
     print(f"\n[{title}]")
@@ -272,17 +308,27 @@ def print_app_error(name):
     print(f"\nIf '{name}' works fine outside of GitLite, and you are still experiencing issues here, please open an issue at:")
     print("\nhttps://github.com/tmscott88/GitLite/issues")
 
-def print_config_error():
+# def print_config_corrupt_error():
+#     print(f"\nWarning: Config file '{__config}' has corrupt or missing properties. Functionality will be limited until this is resolved.") 
+#     # print(f"\nPlease create and place `{__config}' in your Git repo's root directory.")
+#     print(f"\nSee the included README or visit https://github.com/tmscott88/GitLite/blob/main/README.md for further instructions.")
+
+def print_config_not_found_error():
     print(f"\nWarning: Config file '{__config}' not found. Functionality will be limited until this is resolved.") 
     print(f"\nPlease create and place `{__config}' in your Git repo's root directory.")
     print(f"\nSee the included README or visit https://github.com/tmscott88/GitLite/blob/main/README.md for further instructions.")
 
 def open_browser():
     if not has_valid_config():
-        # open default system editor
-        # TODO work on this
+        # TODO add default Window browser
         # if get_platform() == "Windows":
-        #     os.startfile(fpath, "open")
+        #     then open File Explorer
+        if get_platform() == "Unix":
+            browser = os.getenv('EDITOR')
+            print(f"\nWarning: No config file to read browser from. Trying 'xdg-open' since this is a Unix system...")
+            # TODO test this on Linux (doesn't work on macOS Terminal.)
+            # Unix lacks a default/standard file manager, while Windows lacks a standard TTY editor (unless you want to use 'copy con')
+            run(["xdg-open"], "")
         return
     else: 
         browser = get_browser()
@@ -298,10 +344,17 @@ def open_browser():
         
 def open_editor(fpath):
     if not has_valid_config():
-        # open default system editor
-        # TODO work on this
+        # TODO add default Windows editor
         # if get_platform() == "Windows":
-        #     os.startfile(fpath, "open")
+        #     then open Notepad or maybe search for nano and route there
+        if get_platform() == "Unix":
+            editor = os.getenv('EDITOR')
+            print(f"\nWarning: No config file to read editor from. Opening default editor '{editor}'...")
+            if editor:
+                run([editor, fpath], "")
+            else:
+                print(f"\nError: No default editor found. Trying 'nano' since this is a Unix system...")
+                run(["nano", fpath], "")
         return
     else: 
         editor = get_editor()
@@ -309,7 +362,7 @@ def open_editor(fpath):
             if (which(editor)) is None:
                 raise FileNotFoundError
             else:
-                 subprocess.run(f"{editor} {fpath}", check=True)
+                 run([editor, fpath], "")
         except (FileNotFoundError, subprocess.CalledProcessError):
             print_app_error(editor)
         except Exception as e:
@@ -320,11 +373,15 @@ def open_daily_note(fpath):
     open_editor({os.path.join(daily_notes_dir, fpath)})
 
 
-def git(command):
+def run(command_args, message):
     try:
-        subprocess.run(f"git {command}", check=True)
+        subprocess.run(command_args, check=True)
+        if message != "":
+            print(f"\n{message}")
+    except FileNotFoundError as e:
+        print(f"\nFileNotFoundError: {e}")
     except subprocess.CalledProcessError as e:
-        print(f"\nGit command failed. {e}")    
+        print(f"\nCommand failed. {e}")    
         
 def main_menu():
     options = ["Start", "Status", "Log", "Diff", "Pull", "Push", "Stage", "Commit", "Stash", "Revert", "Discard", "Reset", "Settings", "About", "Quit"]
@@ -339,20 +396,21 @@ def main_menu():
                     case "Start":
                         prompt_start()
                     case "Status":
-                        git("fetch")
+                        run(['git', 'fetch'], "")
                         print("\n[Remote]") 
-                        git("status")
+                        run(['git', 'status'], "")
                     case "Log":
                         prompt_log()
                     case "Diff":
-                        if not subprocess.getoutput("git diff"):
+                        diff = subprocess.check_output(['git', 'diff'])
+                        if not diff:
                             print("\nNo tracked changes to analyze.")
                         else:
-                            git("diff")
+                            run(['git', 'diff'], "")
                     case "Pull":
-                        git("pull")
+                        run(['git', 'pull'], "")
                     case "Push":
-                        git("push")
+                        run(['git', 'push'], "")
                     case "Stage":
                         prompt_stage()
                     case "Commit":
@@ -371,20 +429,24 @@ def main_menu():
                         #     print("\nNo stashes found. Create a stash?")
                         #     prompt_create_stash()
                         # else:
-                        #     prompt_stash_menu()
+                        #     prompt_stash_menu() 
                     case "Revert":
-                        git("checkout -p")
+                        run(['git', 'checkout', '-p'], "")
                     case "Discard":
-                        if not subprocess.getoutput("git ls-files --others --exclude-standard"):
+                        reset = subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard'])
+                        if not reset:
                             print("\nNo untracked changes to discard.")
                         else:
-                            git("clean -i -d")
+                            run(['git', 'clean', '-i', '-d'], "")
                     case "Reset":
-                        prompt_select_commit()
+                        if not repo_has_commits:
+                            print("\nNo commits in this repository.")
+                        else:
+                            prompt_select_commit()
                     case "Settings":
                         if not has_valid_config():
-                            print("\nError: Settings menu disabled due to the lack of a valid config file.")
-                            print_config_error()
+                            print("\nError: Settings menu disabled due to missing config file.")
+                            print_config_not_found_error()
                         else:
                             prompt_settings()
                     case "About":
@@ -404,7 +466,7 @@ def main_menu():
 def prompt_start():
     options = ["Back to Main Menu", "New File", "Resume", "Browse"]
     if not has_valid_config():
-        print_config_error()
+        print_config_not_found_error()
     else:
         if is_daily_notes_enabled():
             options = ["Back to Main Menu", "New File", "Resume", "Browse", "Open Daily Note"]
@@ -451,12 +513,11 @@ def prompt_start():
 def prompt_resume():
     files = []
     # Cut leading status letter (e.g. "M")
-    if (get_platform() == "Unix"):
-        files = subprocess.getoutput("git status -s -u | cut -c4-").splitlines()
-    # TODO: test if this else case works on other platforms
-    else:
-        statuses = subprocess.getoutput("git status -s -u").splitlines()
+    try:
+        statuses = subprocess.check_output(['git', 'status', '-s', '-u'], text=True).splitlines()
         files = [file[3:] for file in statuses] 
+    except subprocess.CalledProcessError as e:
+        print(f"\nError checking for available files: {e}") 
     if not files:
         return
     else:
@@ -478,9 +539,14 @@ def prompt_resume():
                 print("\nInvalid input.")
 
 def prompt_log():
-    options = ["Back to Main Menu", "Standard", "Simple", "Verbose"]
-    limit = get_commit_limit()
+    # FALLBACK
+    limit = 10
+    options = ["Back to Main Menu", "Simple", "Standard", "Verbose"]
+    if has_valid_config():
+        limit = get_commit_limit()
+        options = ["Back to Main Menu", "Simple", "Standard", "Verbose", "Display Limit"]
     while True:
+        print(f"\nLimit: {limit} commits")
         print_options(options, "Log")
         try:
             choice = int(input("Choose an option: ")) - 1
@@ -490,15 +556,19 @@ def prompt_log():
                 match options[choice]:
                     case "Back to Main Menu":
                         break
-                    case "Standard":
-                        git(f"log --name-status --all -n {limit}")
-                        break
                     case "Simple":
-                        git(f"log --oneline --all -n {limit}")
-                        break
+                        print_commits(limit)
+                    case "Standard":
+                        run(['git', 'log', '--name-status', '--all', '-n', f'{limit}'], "")
                     case "Verbose":
-                        git(f"log --oneline -p -n {limit}")
-                        break
+                        run(['git', 'log', '--oneline', '-p', '-n', f'{limit}'], "")
+                    case "Display Limit":
+                        new_limit = input("Set new commit display limit (or pass empty message to cancel): ")
+                        if new_limit:
+                            set_commit_limit(new_limit)
+                        else:
+                            print(f"\nCanceled. Keep current display limit: {get_commit_limit()}")
+                            continue
                     case _:
                         raise IndexError()
         except (ValueError, IndexError):
@@ -507,7 +577,7 @@ def prompt_log():
 def prompt_commit():
     message = input("Enter commit message (or pass empty message to cancel): ")
     if message:
-        git(f'commit -m "{message}"') 
+        run(['git', 'commit', '-m', f"{message}"], "") 
     else:
         print("\nCanceled commit.")
 
@@ -523,13 +593,11 @@ def prompt_stage():
                 case "Back to Main Menu":
                     break
                 case "Stage-All":
-                    git("add -A")
-                    print("\nStaged all changes.")
+                    run(['git', 'add', '-A'], "Staged all changes.")
                 case "Unstage-All":
-                    git("restore --staged .")
-                    print("\nUnstaged all changes.")
+                    run(['git', 'restore', '--staged', '.'], "Unstaged all changes")
                 case "Stage-Interactive":
-                    git("add -i")
+                    run(['git', 'add', '-i'], "")
                 case _:
                     raise IndexError
         except (ValueError, IndexError):
@@ -551,14 +619,14 @@ def prompt_create_stash():
                 case "Stash All":
                     message = input("Enter stash message (or pass empty message to cancel): ")
                     if message:
-                        git(f"stash push -u -m '{message}'")
+                        run(['git', 'stash', 'push', '-u', '-m', f"{message}"], "Stashed all changes.")
                     else:
                         print("\nCanceled stash.")
                     break
                 case "Stash Staged":
                     message = input("Enter stash message (or pass empty message to cancel): ")
                     if message:
-                        git(f"stash push --staged -m '{message}'")
+                        run(['git', 'stash', 'push', '--staged', '-m', f"{message}"], "Stashed all staged changes.")
                     break
                 case _:
                     IndexError
@@ -567,7 +635,7 @@ def prompt_create_stash():
 
 def prompt_stash_menu():
     back_stash_menu = "Back to Stash Menu"
-    stashes = subprocess.getoutput("git stash list").splitlines()
+    stashes = subprocess.check_output(['git', 'stash', 'list'], text=True).splitlines()
     stashes_trim = [x.split(":")[0] for x in stashes]
     print_stashes()
     options = ["Back to Main Menu", "Create Stash", "Apply Stash", "Pop Stash", "Drop Stash"]
@@ -601,7 +669,7 @@ def prompt_stash_menu():
                                     raise ValueError()
                                 else:
                                     stash = stashes_trim[stash_choice]
-                                    git(f"stash apply {stash}")
+                                    run(['git', 'stash', 'apply', stash], f"Applied stash {stash} onto working tree.")
                                     break
                             except (ValueError, IndexError):
                                 print("\nInvalid input.")
@@ -621,7 +689,7 @@ def prompt_stash_menu():
                                     raise ValueError()
                                 else:
                                     stash = stashes_trim[stash_choice]
-                                    git(f"stash pop {stash}")
+                                    run(['git', 'stash', 'pop', stash], f"Popped stash {stash} onto working tree.")
                                     break
                             except (ValueError, IndexError):
                                 print("\nInvalid input.")
@@ -654,7 +722,7 @@ def prompt_stash_menu():
                                                 drop_opt = {stashes_trim[stash_choice]}
                                                 match drop_opt:
                                                     case "Yes":
-                                                        git(f"stash drop {drop_opt}")
+                                                        run(['git', 'stash', 'drop', drop_opt], f"Dropped stash {drop_opt} from repository.")
                                                         break
                                                     case "No":
                                                         break
@@ -670,24 +738,21 @@ def prompt_stash_menu():
                 case _:
                     raise IndexError
             print_stashes()
-            stashes = subprocess.getoutput("git stash list").splitlines()
+            stashes = subprocess.check_output(['git', 'stash', 'list'], text=True).splitlines()
             stashes_trim = [x.split(":")[0] for x in stashes]
         except (ValueError, IndexError):
             print("\nInvalid input.")
 
 def prompt_select_commit():
-    limit = get_commit_limit()
-    print("\n[Commits]")
-    git(f"log --oneline --all -n {limit}") 
-    hashes = []
-    # Cut everything after commit hash
-    if (get_platform() == "Unix"):
-        hashes = subprocess.getoutput(f"git log --oneline --all -n {limit} | cut -c -7").splitlines()
-    # TODO: test if this case works on other platforms
-    else:
-        commits = subprocess.getoutput(f"git log --oneline --all -n {limit}").splitlines()
-        hashes = [c[:7] for c in commits]
-    if not commits:
+    # FALLBACK
+    limit = 10
+    if (has_valid_config):
+        limit = get_commit_limit()
+    print_commits(limit)
+    commits = subprocess.check_output(['git', 'log', '--oneline', '--all', '-n', f"{limit}"], text=True).splitlines()
+    hashes = [c[:7] for c in commits]
+    if not hashes:
+        print(f"\nNo commit hashes found.")
         return
     else:
         options = ["Back to Main Menu"] + hashes
@@ -719,33 +784,51 @@ def prompt_reset(commit):
                 case "Back to Main Menu":
                     break
                 case "Mixed":
-                    git(f"reset --mixed {commit}")
+                    print(f"\nMixed reset to commit {commit}? This will keep the working tree but reset index.")
+                    prompt_reset_again("--mixed", commit)
                     break
                 case "Soft":
-                    git(f"reset --soft {commit}")
+                    print(f"\nSoft reset to commit {commit}? This will keep all changes but reset HEAD.")
+                    prompt_reset_again("--soft", commit)
                     break
                 case "Hard":
                     print(f"\nHard reset to commit {commit}? ALL CHANGES WILL BE DISCARDED!")
-                    hard_reset_options = ["Yes", "No"]
-                    while True:
-                        for i, hard_opt in enumerate(hard_reset_options):
-                            print(f"{i+1}. {hard_opt}")
-                        try:
-                            reset_choice = int(input("Choose an option: ")) - 1
-                            hard_opt = hard_reset_options[reset_choice]
-                            if hard_opt == "Yes":
-                                git(f"reset --hard {commit}")
-                                break
-                            elif hard_opt == "No":
-                                break
-                        except (ValueError, IndexError):
-                            print("\nInvalid input.")
-                            continue
+                    prompt_reset_again("--hard", commit)
                     break
                 case _:
                     raise IndexError
         except (ValueError, IndexError):
             print("\nInvalid input.")
+
+def prompt_reset_again(reset_arg, commit):
+    reset_label = ""
+    match(reset_arg):
+        case "--mixed":
+            reset_label = "Mixed"
+        case "--soft":
+            reset_label = "Soft"
+        case "--hard":
+            reset_label = "Hard"
+    reset_options = ["Yes", "No"]
+    while True:
+        for i, reset_opt in enumerate(reset_options):
+            print(f"{i+1}. {reset_opt}")
+        try:
+            reset_choice = int(input("Choose an option: ")) - 1
+            reset_opt = reset_options[reset_choice]
+            if reset_opt == "Yes":
+                run(['git', 'reset', reset_arg, commit], f"{reset_label} reset to commit {commit}.")
+                # FALLBACK
+                limit = 10
+                if (has_valid_config):
+                    limit = get_commit_limit()
+                print_commits(limit)
+                break
+            elif reset_opt == "No":
+                break
+        except (ValueError, IndexError):
+            print("\nInvalid input.")
+            continue
 
 def prompt_settings():
     options = ["Back to Main Menu", "Browser", "Editor", "Daily Notes", "Commit Limit"]

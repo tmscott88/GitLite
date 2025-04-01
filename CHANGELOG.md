@@ -2,16 +2,24 @@
 
 See below for what has been successfully ported from `start.sh` -> `gitlite.py`, and what reamins in development. I started at version 0.8.0 for this repo since I already migrated about 80% of the former script to the current script.
 
-## (WIP) 0.8.4
+## (TBD) 0.8.5
+
+- [] Interactive "Setup" menu - make **GitLite** friendlier. If config file doesn't exist, ask to auto-generate new file with appropriate parameters
+- [] Add further config file verification, section by section, key by key
+- [] Keep the app as flexible as possible, even without a valid config file. Use reasonable defaults, perhaps offer to create the config.ini file with pre-populated vallues. Upload to the repo without including it in tracking.
+- [] Rework "Resume" menu to list files by modification date rather than by git status. Provide different options.
+- [] Create "Diff" menu; Show `git diff` by choice of file rather than for all tracked, uncommitted files at once.
+
+## (WIP) 0.8.4-6
 
 - [x] Add "About" option to main menu
 - [x] Improve Settings menu to mimic `config.ini` structure. See `README.md` for the new base config file.
-- [x] Remove unnecessary shell calls
+- [x] Remove unnecessary shell calls, change all subprocess calls to explicit parts
 - [x] Improve error when an app cannot be found or crashes on execution.
-- [] Keep the app as flexible as possible, even without a valid config file. Use reasonable defaults, perhaps offer to create the config.ini file with pre-populated vallues. Upload to the repo without including it in tracking.
+- [x] CRITICAL: prevent GitLite from attempting to load external app when invalid app reference is set in `config.ini` (i.e. by manual intervention, a previous session) outside of the Settings Menu.
 
-- [?] CRITICAL: prevent GitLite from attempting to load app when invalid app reference is set in `config.ini` (i.e. by manual intervention, a previous session) outside of the Settings Menu.
 - [] Cross-platform fixes (Windows, macOS, Linux)
+- [] BUG: macOS build not reading directory properly.
 - [] Improve/clarify initial arguments
 
 ## 0.8.3
@@ -79,7 +87,3 @@ New Features
   - [x] Hard
   - [x] Soft
 - [x] Quit
-
-### Planned Features
-
-- [] More Git file shortcuts (.gitignore, README.md)
