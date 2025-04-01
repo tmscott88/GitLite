@@ -1,21 +1,26 @@
 # README
 
-> Written for Python 3.x, this is a command-line app meant to simplify common Git interactions from the command line.
+> Written in Python 3, **GitWriting** is a command-line app built for writers/editors using Git. I created this app in order to streamline my creative writing and Git workflow into one lightweight app, transitioning away from heavier GUI-based apps like Obsidian, VSCode, etc. Spend more time writing and less time typing commands.
+>
+> Builds are available for Windows and Linux, with a macOS build in the works. If using macOS, you may download `gitwriting.py` and execute that instead from `Terminal`. See below for how to install and use this app.
 
-***BIG DISCLAIMER**: THIS APP IS STILL IN DEVELOPMENT! At its core, **GitLite** is designed for personal, linear, one-branch projects. Merging, Rebasing, merge conflict resolution, and other "advanced" Git operations are not implemented at this time.*
-
-*I am not responsible for headaches or heartbreaks if you rely on this script for a multi-million dollar, mission-critical project for your job. Just **please** use VSCode, SourceTree, or something more robust if that is you.*
+***BIG DISCLAIMER**: THIS APP IS STILL UNDER DEVELOPMENT! Right now, **GitWriting** works best with personal, linear, one-branch projects. More advanced Git operations like merging, rebasing, and merge conflict resolution are not implemented at this time.*
 
 ## Usage
 
-- Place the **GitLite-X.X.X** executable in the root directory of your local Git repository. Add an appropriate pattern to your repository's `.gitignore` if you don't want the app committed.
+Using the executable
+- Place the **GitWriting-X.X.X** executable in the root directory of your local Git repository. Add an appropriate pattern to your repository's `.gitignore`, i.e. `*GitWriting`
 - Launch the executable.
-- Run: `python3 | py gitlite.py [-OPTION]`
+
+Using the script
+- Place the **gitwriting.py** script in the root directory of your local Git repository. Add an appropriate pattern to your repository's `.gitignore` if you don't want the app committed, i.e. `*GitWriting
+- Run: `./gitwriting.py [-OPTION]`
+  - If the script won't execute, update its permissions to be executable: `chmod +x gitwriting.py` 
 - Options: `[-h | --help | -H]` `[-o | --options | -O]` `[-v | --version | -V]`
 
-Note: A `config.ini` configuration file must be created and placed in the repo's root directory (alongside the **GitLite** executable) in order to save and read app settings. certain features will be limited or blocked. See below for a working template.
+Note: A `config.ini` configuration file must be created and placed in the repo's root directory (alongside the **GitWriting** executable) in order to save and read app settings. certain features will be limited or blocked. See below for a working template.
 
-**GitLite** is written to work across terminals on Windows, macOS, and Linux. MacOS builds are not building on my *ancient* MacBook Air, so Linux and Windows are the ideal platforms to use right now.
+**GitWriting** is written to work across terminals on Windows, macOS, and Linux. MacOS native builds are not working on my *ancient* MacBook Air, so Linux and Windows are the best platforms to use right now.
 
 ### Build from Source
 
@@ -24,13 +29,13 @@ Note: A `config.ini` configuration file must be created and placed in the repo's
 
 #### Windows & Linux (Recommended)
 
-> pyinstaller -F -n GitLite --recursive-copy-metadata readchar gitlite.py
+> pyinstaller -F -n GitWriting --recursive-copy-metadata readchar gitwriting.py
 
 #### macOS (NOT WORKING RIGHT NOW)
 
 `-w | --windowed | --noconsole` enables building an OSX `.app` bundle and Unix executable instead of a `console` document.
 
-> pyinstaller -F -w -n GitLite --recursive-copy-metadata readchar gitlite.py
+> pyinstaller -F -w -n GitWriting --recursive-copy-metadata readchar gitwriting.py
 
 ## Configuration File
 
