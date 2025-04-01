@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import configparser  
 import subprocess
 import os
@@ -11,7 +13,7 @@ __version_num = "0.8.3-7"
 __config = "config.ini"
 
 def main():
-    parser_desc = f"Settings are defined in '{__config}'. See 'README.md' for a template config file. This file is required in order to configure"
+    parser_desc = f"Settings are defined in '{__config}'. See 'README.md' for a template config file."
     options_desc = "Options: [-h | --help | -H] [-o | --options | -O] [-v | --version | -V]"
     usage_desc = f"Usage: python3 | py {os.path.basename(__file__)} [-OPTION]"
 
