@@ -7,7 +7,7 @@ from shutil import which
 from datetime import datetime
 
 __parser = configparser.ConfigParser()
-__version_num = "0.8.3-alpha6"
+__version_num = "0.8.3-7"
 __config = "config.ini"
 
 def main():
@@ -70,7 +70,7 @@ def has_valid_config():
     except FileNotFoundError:
         return False
     except Exception as e:
-        print(f"\nError while reading config file {__config}: {e}")
+        print(f"\nCould not read config file {__config}: {e}")
     return False
 
 # def has_valid_sections():
@@ -86,7 +86,7 @@ def save_to_config(message):
             __parser.write(newfile)
         print(f"\n{message}")
     except Exception as e:
-        print(f"\nError while saving to config file '{newfile}': {e}")
+        print(f"\nCould not save to config file '{newfile}': {e}")
 
 def get_platform():
     match(os.name):
@@ -112,36 +112,38 @@ def get_browser():
     try:
         return __parser.get('APPS', 'browser')
     except Exception as e:
-        print(f"\nError while retrieving browser from '{__config}'. {e}")
+        print(f"\nCould not retrieve browser from '{__config}'. {e}")
         print(f"\nPlease check '{__config}' or visit Main Menu -> Settings to configure a valid browser.")
-
+        # return get_system_browser()
 
 def get_editor():
     try:
         return __parser.get('APPS', 'editor')
     except Exception as e:
-        print(f"\nError while retrieving editor from '{__config}'. {e}")
+        print(f"\nCould not retrieve editor from '{__config}'. {e}")
         print(f"\nPlease check '{__config}' or visit Main Menu -> Settings to configure a valid editor.")
+        return get_system_editor()
 
 def get_commit_limit():
     try:
         return __parser.get('MISC', 'commit_limit')
     except Exception as e:
-        print(f"\nError while retrieving commit limit from '{__config}'. {e}")
+        print(f"\nCould not retrieve commit limit from '{__config}'. {e}")
         print(f"\nPlease check '{__config}' or visit Main Menu -> Settings to configure a valid limit.")
+        return -1
 
 def get_daily_notes_status():
     try:
         return __parser.get('DAILY_NOTES', 'status')
     except Exception as e:
-        print(f"\nError while retrieving daily notes status from '{__config}'. {e}")
+        print(f"\nCould not retrieve daily notes status from '{__config}'. {e}")
         print(f"\nPlease check '{__config}' or visit Main Menu -> Settings to configure a valid status.")
 
 def get_daily_notes_path():
     try:
         return __parser.get('DAILY_NOTES', 'path')
     except Exception as e:
-        print(f"\nError while retrieving commit daily notes path from '{__config}'. {e}")
+        print(f"\nCould not retrieve daily notes path from '{__config}'. {e}")
         print(f"\nPlease check '{__config}' or visit Main Menu -> Settings to configure a valid path.")
 
 def set_app(new_app, app_type):
@@ -154,7 +156,7 @@ def set_app(new_app, app_type):
     except FileNotFoundError:
         print_app_error(new_app)
     except Exception as e:
-        print(f"\nError while setting {app_type} '{new_app}'. {e}")
+        print(f"\nCould not set {app_type} to '{new_app}'. {e}")
     
 
 def set_commit_limit(new_limit):
@@ -167,15 +169,16 @@ def set_commit_limit(new_limit):
             __parser.set('MISC', 'commit_limit', new_limit)
             save_to_config(f"Set commit limit: {new_limit}")
         except Exception as e:
-            print(f"\nError while setting commit limit '{new_limit}'. {e}")
+            print(f"\nCould not set commit limit to '{new_limit}'. {e}")
 
 def set_daily_notes_status(new_status):
     if (new_status == "on" or new_status == "off"):
         try:
+            
             __parser.set('DAILY_NOTES', 'status', new_status)
-            save_to_config(f"Set Daily Notes: {"On" if new_status == "on" else "Off"}")
+            save_to_config(f"Set Daily Notes: {new_status}")
         except Exception as e:
-            print(f"\nError while setting daily notes status: {e}")
+            print(f"\nCould not set daily notes status: {e}")
     else:
         print(f"\nUnexpected status '{new_status}'. Status must be 'on' or 'off'.")
 
@@ -184,7 +187,7 @@ def set_daily_notes_path(new_path):
         __parser.set('DAILY_NOTES', 'path', new_path)
         save_to_config(f"Set daily notes path: {new_path}")
     except Exception as e:
-        print(f"\nError while setting daily notes path: {e}")
+        print(f"\nCould not set daily notes path: {e}")
 
 def is_existing_file(path):
     return bool(os.path.isfile(path))
@@ -207,7 +210,7 @@ def create_new_file(new_path):
             f = open(new_path, 'w')
             print(f"\nCreated file {new_path}.")
         except subprocess.CalledProcessError as e:
-            print(f"\nError creating file '{new_path}'. {e}")
+            print(f"\nCould not create file '{new_path}'. {e}")
             return
         # Only open editor if file was created properly from the previous step
         if is_existing_file(new_path):
@@ -235,7 +238,7 @@ def create_new_directory(new_path):
                 print(f"\nPath creation failed. Keep current path: '{get_daily_notes_path()}'.")
                 return
         except Exception as e:
-            print(f"\nError creating directory '{new_path}'. {e}")
+            print(f"\nCould not create directory '{new_path}'. {e}")
             return
     # if directory doesn't exist but conflicting file exists
     elif not is_existing_directory(new_path) and is_existing_file(new_path):
@@ -320,15 +323,7 @@ def print_config_not_found_error():
 
 def open_browser():
     if not has_valid_config():
-        # TODO add default Window browser
-        # if get_platform() == "Windows":
-        #     then open File Explorer
-        if get_platform() == "Unix":
-            browser = os.getenv('EDITOR')
-            print(f"\nWarning: No config file to read browser from. Trying 'xdg-open' since this is a Unix system...")
-            # TODO test this on Linux (doesn't work on macOS Terminal.)
-            # Unix lacks a default/standard file manager, while Windows lacks a standard TTY editor (unless you want to use 'copy con')
-            run(["xdg-open"], "")
+        open_system_browser()
         return
     else: 
         browser = get_browser()
@@ -336,25 +331,39 @@ def open_browser():
             if (which(browser)) is None:
                 raise FileNotFoundError
             else:
-                 subprocess.run(browser, check=True)
+                 run(browser, "")
         except (FileNotFoundError, subprocess.CalledProcessError):
             print_app_error(browser)
+            open_system_browser()
         except Exception as e:
-            print(f"\nError while opening '{browser}'. {e}")
+            print(f"\nCould not open browser '{browser}'. {e}")
+            open_system_browser()
+
+# TODO is this needed??
+# def get_system_browser():
+#     if get_platform() == "Unix":
+#         editor = os.getenv('EDITOR')
+#         return browser if browser else "nano"
+#     elif get_platform() == "Windows":
+#         print(f"\nWindows system browser coming soon.")
+#         # TODO add default Windows browser
+#         # open File Explorer
+
+def open_system_browser():
+    # browser = get_system_browser()
+    if get_platform() == "Unix":
+        return
+        # Unix lacks a default/standard file manager, while Windows lacks a standard TTY editor (unless you want to use 'copy con'). Pros and cons. You can't win them all...
+    elif get_platform() == "Windows":
+        # TODO add default Window browser
+        # if get_platform() == "Windows":
+        #     then open File Explorer
+        print(f"\nWindows system browser coming soon.")
         
 def open_editor(fpath):
     if not has_valid_config():
-        # TODO add default Windows editor
-        # if get_platform() == "Windows":
-        #     then open Notepad or maybe search for nano and route there
-        if get_platform() == "Unix":
-            editor = os.getenv('EDITOR')
-            print(f"\nWarning: No config file to read editor from. Opening default editor '{editor}'...")
-            if editor:
-                run([editor, fpath], "")
-            else:
-                print(f"\nError: No default editor found. Trying 'nano' since this is a Unix system...")
-                run(["nano", fpath], "")
+        # Open default system editor (Unix & Windows supported)
+        open_system_editor(fpath)
         return
     else: 
         editor = get_editor()
@@ -365,9 +374,34 @@ def open_editor(fpath):
                  run([editor, fpath], "")
         except (FileNotFoundError, subprocess.CalledProcessError):
             print_app_error(editor)
+            # open_system_editor(fpath)
         except Exception as e:
-            print(f"\nError while opening '{editor}'. {e}")
-
+            print(f"\nCould not open editor '{editor}'. {e}")
+            # open_system_editor(fpath)
+            
+def get_system_editor():
+    if get_platform() == "Unix":
+        editor = os.getenv('EDITOR')
+        return editor if editor else "nano"
+    elif get_platform() == "Windows":
+        print(f"\nWindows system editor coming soon.")
+        # TODO add default Windows editor
+        # open Notepad or maybe search for nano and route there
+    
+def open_system_editor(fpath):
+    editor = get_system_editor()
+    if get_platform() == "Unix":
+        print(f"\nWarning: No config file to read editor from. Opening default editor '{editor}'...")
+        if editor:
+            run([editor, fpath], "")
+        else:
+            print(f"\nCould not retrieve default editor.")
+            return
+    elif get_platform() == "Windows":
+        print(f"\nWindows system editor function coming soon.")
+        # TODO add default Windows editor
+        # open Notepad or maybe search for nano and route there            
+            
 def open_daily_note(fpath):
     daily_notes_dir = get_daily_notes_path()
     open_editor({os.path.join(daily_notes_dir, fpath)})
@@ -517,7 +551,7 @@ def prompt_resume():
         statuses = subprocess.check_output(['git', 'status', '-s', '-u'], text=True).splitlines()
         files = [file[3:] for file in statuses] 
     except subprocess.CalledProcessError as e:
-        print(f"\nError checking for available files: {e}") 
+        print(f"\nCould not get available files: {e}") 
     if not files:
         return
     else:
@@ -540,13 +574,17 @@ def prompt_resume():
 
 def prompt_log():
     # FALLBACK
-    limit = 10
+    limit = -1
+    config_limit = get_commit_limit()
     options = ["Back to Main Menu", "Simple", "Standard", "Verbose"]
-    if has_valid_config():
-        limit = get_commit_limit()
-        options = ["Back to Main Menu", "Simple", "Standard", "Verbose", "Display Limit"]
+    if (has_valid_config() and config_limit != -1):
+        limit = config_limit
+        options = ["Back to Main Menu", "Simple", "Standard", "Verbose", "Commit Limit"]
     while True:
-        print(f"\nLimit: {limit} commits")
+        if int(limit) == 1:
+            print(f"\nLimit: {limit} commit")
+        elif int(limit) > 0:
+            print(f"\nLimit: {limit} commits")
         print_options(options, "Log")
         try:
             choice = int(input("Choose an option: ")) - 1
@@ -562,13 +600,11 @@ def prompt_log():
                         run(['git', 'log', '--name-status', '--all', '-n', f'{limit}'], "")
                     case "Verbose":
                         run(['git', 'log', '--oneline', '-p', '-n', f'{limit}'], "")
-                    case "Display Limit":
-                        new_limit = input("Set new commit display limit (or pass empty message to cancel): ")
-                        if new_limit:
-                            set_commit_limit(new_limit)
-                        else:
-                            print(f"\nCanceled. Keep current display limit: {get_commit_limit()}")
-                            continue
+                    case "Commit Limit":
+                        prompt_set_commit_limit()
+                        current_limit = get_commit_limit()
+                        if int(current_limit) > 0:
+                            limit = current_limit                 
                     case _:
                         raise IndexError()
         except (ValueError, IndexError):
@@ -580,6 +616,14 @@ def prompt_commit():
         run(['git', 'commit', '-m', f"{message}"], "") 
     else:
         print("\nCanceled commit.")
+
+def prompt_set_commit_limit():
+    new_limit = input("Set new commit display limit (or pass empty message to cancel): ")
+    if new_limit:
+        set_commit_limit(new_limit)
+        limit = get_commit_limit()
+    else:
+        print(f"\nCanceled. Keep current display limit: {get_commit_limit()}")
 
 def prompt_stage():
     options = ["Back to Main Menu", "Stage-All", "Unstage-All", "Stage-Interactive"]
@@ -745,9 +789,10 @@ def prompt_stash_menu():
 
 def prompt_select_commit():
     # FALLBACK
-    limit = 10
-    if (has_valid_config):
-        limit = get_commit_limit()
+    limit = -1
+    config_limit = get_commit_limit()
+    if (has_valid_config() and config_limit != -1):
+        limit = config_limit
     print_commits(limit)
     commits = subprocess.check_output(['git', 'log', '--oneline', '--all', '-n', f"{limit}"], text=True).splitlines()
     hashes = [c[:7] for c in commits]
@@ -819,9 +864,10 @@ def prompt_reset_again(reset_arg, commit):
             if reset_opt == "Yes":
                 run(['git', 'reset', reset_arg, commit], f"{reset_label} reset to commit {commit}.")
                 # FALLBACK
-                limit = 10
-                if (has_valid_config):
-                    limit = get_commit_limit()
+                limit = -1
+                config_limit = get_commit_limit()
+                if (has_valid_config and config_limit != -1):
+                    limit = config_limit
                 print_commits(limit)
                 break
             elif reset_opt == "No":
@@ -879,12 +925,7 @@ def prompt_settings():
                             print("\nInvalid input.")
                             continue
                 case "Commit Limit":
-                    new_limit = input("Set new commit display limit (or pass empty message to cancel): ")
-                    if new_limit:
-                        set_commit_limit(new_limit)
-                    else:
-                        print(f"\nCanceled. Keep current display limit: {get_commit_limit()}")
-                        continue
+                    prompt_set_commit_limit()
                 case _:
                     raise IndexError
         except (ValueError, IndexError):

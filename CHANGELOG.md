@@ -10,7 +10,7 @@ See below for what has been successfully ported from `start.sh` -> `gitlite.py`,
 - [] Rework "Resume" menu to list files by modification date rather than by git status. Provide different options.
 - [] Create "Diff" menu; Show `git diff` by choice of file rather than for all tracked, uncommitted files at once.
 
-## (WIP) 0.8.4-6
+## (WIP) 0.8.4
 
 - [x] Add "About" option to main menu
 - [x] Improve Settings menu to mimic `config.ini` structure. See `README.md` for the new base config file.
