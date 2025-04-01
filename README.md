@@ -27,7 +27,15 @@
 - Install [PyInstaller](https://pyinstaller.org/en/stable/) using `pip`. See [here](https://pip.pypa.io/en/stable/installation/) if you do not already have `pip` installed with Python.
 - Run this command from the root project directory to create a build.
 
-> pyinstaller --onefile --name GitLite --recursive-copy-metadata readchar gitlite.py
+#### Windows `.exe`
+
+> pyinstaller -F -n GitLite --recursive-copy-metadata readchar gitlite.py
+
+#### macOS `.pkg` (NOT WORKING RIGHT NOW)
+
+`-w | --windowed | --noconsole` enables building an OSX `.app` bundle and Unix executable instead of a `console` document.
+
+> pyinstaller -F -w -n GitLite --recursive-copy-metadata readchar gitlite.py
 
 ## Configuration File
 
