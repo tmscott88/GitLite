@@ -9,7 +9,7 @@ from shutil import which
 from datetime import datetime
 
 __parser = configparser.ConfigParser()
-__version_num = "0.8.3-8"
+__version_num = "0.8.3-9"
 __config = "config.ini"
 
 def main():
@@ -55,45 +55,6 @@ def main():
         print_changes()
         main_menu()
 
-# check if we're inside a valid git repo
-def is_valid_repo():
-    try:
-        git_root = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip()
-        script_dir = get_current_dir()
-        # match the path seperators
-        # print(f"\n(DEBUG) Git Root: {git_root}")
-        # print(f"(DEBUG) Script Dir: {script_dir}")
-        return bool(git_root == script_dir)
-    except subprocess.CalledProcessError:   
-        print("\nPlease place this executable in your Git repo's root directory.")
-        return False
-
-def has_valid_config():
-    try:
-        with open(__config, 'r', encoding="utf-8") as file:
-            __parser.read(__config)
-        return True
-    except FileNotFoundError:
-        return False
-    except Exception as e:
-        print(f"\nCould not read config file {__config}: {e}")
-    return False
-
-# def has_valid_sections():
-#     for section in __parser.sections():
-#         # TODO: check if section is within valid "Sections" enum
-#         for key, value in __parser.items(section):
-#             # TODO: check if key, value matches expected format? Key match is most important
-#             print(f"{key} = {value}")
-
-def save_to_config(message):
-    try:
-        with open(__config, "w", encoding="utf-8") as newfile:
-            __parser.write(newfile)
-        print(f"\n{message}")
-    except Exception as e:
-        print(f"\nCould not save to config file '{newfile}': {e}")
-
 def get_platform():
     match(os.name):
         case "nt":
@@ -122,6 +83,16 @@ def get_browser():
         print(f"\nPlease check '{__config}' or visit Main Menu -> Settings to configure a valid browser.")
         # return get_system_browser()
 
+# TODO is this needed??
+# def get_system_browser():
+#     if get_platform() == "Unix":
+#         editor = os.getenv('EDITOR')
+#         return browser if browser else "nano"
+#     elif get_platform() == "Windows":
+#         print(f"\nWindows system browser coming soon.")
+#         # TODO add default Windows browser
+#         # open File Explorer
+
 def get_editor():
     try:
         return __parser.get('APPS', 'editor')
@@ -129,6 +100,15 @@ def get_editor():
         print(f"\nCould not retrieve editor from '{__config}'. {e}")
         print(f"\nPlease check '{__config}' or visit Main Menu -> Settings to configure a valid editor.")
         return get_system_editor()
+
+def get_system_editor():
+    if get_platform() == "Unix":
+        editor = os.getenv('EDITOR')
+        return editor if editor else "nano"
+    elif get_platform() == "Windows":
+        print(f"\nWindows system editor coming soon.")
+        # TODO add default Windows editor
+        # open Notepad or maybe search for nano and route there
 
 def get_commit_limit():
     try:
@@ -195,22 +175,18 @@ def set_daily_notes_path(new_path):
     except Exception as e:
         print(f"\nCould not set daily notes path: {e}")
 
-def is_existing_file(path):
-    return bool(os.path.isfile(path))
-    
-def is_existing_directory(dir):
-    return bool(os.path.isdir(dir))
+def save_to_config(message):
+    try:
+        with open(__config, "w", encoding="utf-8") as newfile:
+            __parser.write(newfile)
+        print(f"\n{message}")
+    except Exception as e:
+        print(f"\nCould not save to config file '{newfile}': {e}")
 
 def create_new_file(new_path):
     # if file nor (conflicting) directory exist, create the file
     if not is_existing_file(new_path) and not is_existing_directory(new_path):
         try:
-            # TODO test path normalization/input sanitization
-            # normalized_path = os.path.normpath(new_path)    
-            # print(new_path)
-            # print(normalized_path)
-            
-            # Extract just path from full path. Create all intermediate directors up to file if needed, exist_ok=True to not raise error if directory already exists
             os.makedirs(os.path.dirname(new_path), exist_ok=True)
             # Create the file
             f = open(new_path, 'w')
@@ -251,8 +227,110 @@ def create_new_directory(new_path):
         print(f"\nA file '{new_path}' already exists in this directory. Please choose a different directory name or path.")
     else:
         set_daily_notes_path(new_path)
+
+# TODO create custom CLI browser, maybe a menu similar to the Log() screen
+def open_browser():
+    if not has_valid_config():
+        open_system_browser()
+        return
+    else: 
+        browser = get_browser()
+        try:
+            if (which(browser)) is None:
+                raise FileNotFoundError
+            else:
+                 run(browser, "")
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            print_app_error(browser)
+            open_system_browser()
+        except Exception as e:
+            print(f"\nCould not open browser '{browser}'. {e}")
+            open_system_browser()
+
+def open_system_browser():
+    # browser = get_system_browser()
+    if get_platform() == "Unix":
+        return
+        # Unix lacks a default/standard file manager, while Windows lacks a standard TTY editor (unless you want to use 'copy con'). Pros and cons. You can't win them all...
+    elif get_platform() == "Windows":
+        # TODO add default Window browser
+        # if get_platform() == "Windows":
+        #     then open File Explorer
+        print(f"\nWindows system browser coming soon.")
         
-# HELPER FUNCTIONS
+def open_editor(fpath):
+    if not has_valid_config():
+        # Open default system editor (Unix & Windows supported)
+        open_system_editor(fpath)
+        return
+    else: 
+        editor = get_editor()
+        try:
+            if (which(editor)) is None:
+                raise FileNotFoundError
+            else:
+                 run([editor, fpath], "")
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            print_app_error(editor)
+            # open_system_editor(fpath)
+        except Exception as e:
+            print(f"\nCould not open editor '{editor}'. {e}")
+            # open_system_editor(fpath)
+    
+def open_system_editor(fpath):
+    editor = get_system_editor()
+    if get_platform() == "Unix":
+        print(f"\nWarning: No config file to read editor from. Opening default editor '{editor}'...")
+        if editor:
+            run([editor, fpath], "")
+        else:
+            print(f"\nCould not retrieve default editor.")
+            return
+    elif get_platform() == "Windows":
+        print(f"\nWindows system editor function coming soon.")
+        # TODO add default Windows editor
+        # open Notepad or maybe search for nano and route there            
+            
+def open_daily_note(fpath):
+    daily_notes_dir = get_daily_notes_path()
+    open_editor({os.path.join(daily_notes_dir, fpath)})
+
+# check if we're inside a valid git repo
+def is_valid_repo():
+    try:
+        git_root = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip()
+        script_dir = get_current_dir()
+        # match the path seperators
+        # print(f"\n(DEBUG) Git Root: {git_root}")
+        # print(f"(DEBUG) Script Dir: {script_dir}")
+        return bool(git_root == script_dir)
+    except subprocess.CalledProcessError:   
+        print("\nPlease place this executable in your Git repo's root directory.")
+        return False
+
+def has_valid_config():
+    try:
+        with open(__config, 'r', encoding="utf-8") as file:
+            __parser.read(__config)
+        return True
+    except FileNotFoundError:
+        return False
+    except Exception as e:
+        print(f"\nCould not read config file {__config}: {e}")
+    return False
+
+# def has_valid_sections():
+#     for section in __parser.sections():
+#         # TODO: check if section is within valid "Sections" enum
+#         for key, value in __parser.items(section):
+#             # TODO: check if key, value matches expected format? Key match is most important
+#             print(f"{key} = {value}")
+
+def is_existing_file(path):
+    return bool(os.path.isfile(path))
+    
+def is_existing_directory(dir):
+    return bool(os.path.isdir(dir))
 
 def file_has_changes(fpath):
     status = subprocess.check_output(['git', 'status', fpath, '--short'])
@@ -327,93 +405,6 @@ def print_config_not_found_error():
     print(f"\nPlease create and place `{__config}' in your Git repo's root directory.")
     print(f"\nSee the included README or visit https://github.com/tmscott88/GitLite/blob/main/README.md for further instructions.")
 
-# TODO create custom CLI browser, maybe a menu similar to the Log() screen
-def open_browser():
-    if not has_valid_config():
-        open_system_browser()
-        return
-    else: 
-        browser = get_browser()
-        try:
-            if (which(browser)) is None:
-                raise FileNotFoundError
-            else:
-                 run(browser, "")
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            print_app_error(browser)
-            open_system_browser()
-        except Exception as e:
-            print(f"\nCould not open browser '{browser}'. {e}")
-            open_system_browser()
-
-# TODO is this needed??
-# def get_system_browser():
-#     if get_platform() == "Unix":
-#         editor = os.getenv('EDITOR')
-#         return browser if browser else "nano"
-#     elif get_platform() == "Windows":
-#         print(f"\nWindows system browser coming soon.")
-#         # TODO add default Windows browser
-#         # open File Explorer
-
-def open_system_browser():
-    # browser = get_system_browser()
-    if get_platform() == "Unix":
-        return
-        # Unix lacks a default/standard file manager, while Windows lacks a standard TTY editor (unless you want to use 'copy con'). Pros and cons. You can't win them all...
-    elif get_platform() == "Windows":
-        # TODO add default Window browser
-        # if get_platform() == "Windows":
-        #     then open File Explorer
-        print(f"\nWindows system browser coming soon.")
-        
-def open_editor(fpath):
-    if not has_valid_config():
-        # Open default system editor (Unix & Windows supported)
-        open_system_editor(fpath)
-        return
-    else: 
-        editor = get_editor()
-        try:
-            if (which(editor)) is None:
-                raise FileNotFoundError
-            else:
-                 run([editor, fpath], "")
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            print_app_error(editor)
-            # open_system_editor(fpath)
-        except Exception as e:
-            print(f"\nCould not open editor '{editor}'. {e}")
-            # open_system_editor(fpath)
-            
-def get_system_editor():
-    if get_platform() == "Unix":
-        editor = os.getenv('EDITOR')
-        return editor if editor else "nano"
-    elif get_platform() == "Windows":
-        print(f"\nWindows system editor coming soon.")
-        # TODO add default Windows editor
-        # open Notepad or maybe search for nano and route there
-    
-def open_system_editor(fpath):
-    editor = get_system_editor()
-    if get_platform() == "Unix":
-        print(f"\nWarning: No config file to read editor from. Opening default editor '{editor}'...")
-        if editor:
-            run([editor, fpath], "")
-        else:
-            print(f"\nCould not retrieve default editor.")
-            return
-    elif get_platform() == "Windows":
-        print(f"\nWindows system editor function coming soon.")
-        # TODO add default Windows editor
-        # open Notepad or maybe search for nano and route there            
-            
-def open_daily_note(fpath):
-    daily_notes_dir = get_daily_notes_path()
-    open_editor({os.path.join(daily_notes_dir, fpath)})
-
-
 def run(command_args, message):
     try:
         subprocess.run(command_args, check=True)
@@ -453,19 +444,23 @@ def main_menu():
                     case "Push":
                         run(['git', 'push'], "")
                     case "Stage":
-                        prompt_stage()
+                        if not repo_has_changes():
+                            print("\nNo changes to stage or unstage.")
+                        else:
+                            prompt_stage()
                     case "Commit":
                         if not repo_has_staged_changes():
                             print("\nNo changes staged for commit. Please stage changes before committing.")
                         else:
                             prompt_commit()
                     case "Stash":
-                        print("\nStash menu coming soon.")
-                        if file_has_changes(__file__):
+                        if file_has_changes(os.path.basename(__file__)):
                             print("\nCannot safely stash because this script has been modified. Please commit this script first.")
+                            print_stashes()
+                            print_changes()
                             continue
                         if not (repo_has_changes() or repo_has_stashes()):
-                            print("\nNo changes to stash. No stashes to apply. Cannot proceed.")
+                            print("\nNo changes to stash. No stashes to apply.")
                         elif repo_has_changes() and not repo_has_stashes():
                             print("\nNo stashes found. Create a stash?")
                             prompt_create_stash()
@@ -523,7 +518,6 @@ def prompt_start():
                     case "Back to Main Menu":
                         break
                     case "New/Open":
-                        # ask for filename (accept path or directory)
                         file_name = input("Enter new file name (or pass empty message to cancel): ")
                         if file_name:
                             create_new_file(os.path.join(get_current_dir(), file_name).replace("\\","/"))
@@ -556,9 +550,9 @@ def prompt_resume():
     # TODO: make switch flag in this menu set to "Last Modified" or "In Working Tree", reload menu based on toggle
     #   Also create new config setting
     files = []
-    # Cut leading status letter (e.g. "M")
     try:
         statuses = subprocess.check_output(['git', 'status', '-s', '-u'], text=True).splitlines()
+        # Cut leading status letter (e.g. "M")
         files = [file[3:] for file in statuses] 
     except subprocess.CalledProcessError as e:
         print(f"\nCould not get available files: {e}") 
@@ -707,15 +701,15 @@ def prompt_stash_menu():
                     break
                 case "Create Stash":
                     if not repo_has_changes():
-                        print("There are no changes to stash.")
+                        print("\nThere are no changes to stash.")
                     else:
                         prompt_create_stash()
                     break
                 case "Apply Stash":
                     if not repo_has_stashes():
-                        print("There are no stashes in this repo.")
+                        print("\nThere are no stashes in this repo.")
                     else:
-                        print("Note: This will apply the stored copy of the stash and preserve it in the local tree.")
+                        print("\nNote: This will apply the stored copy of the stash and preserve it in the local tree.")
                         stash_options = ["Back to Main Menu"] + names
                         while True:
                             for i, stash in enumerate(stash_options):
@@ -735,9 +729,9 @@ def prompt_stash_menu():
                                 continue
                 case "Pop Stash":
                     if not repo_has_stashes():
-                        print("There are no stashes in this repo.")
+                        print("\nThere are no stashes in this repo.")
                     else:
-                        print("Note: This will apply the stored copy of the selected stash and remove it from the local tree.")
+                        print("\nNote: This will apply the stored copy of the selected stash and remove it from the local tree.")
                         stash_options = ["Back to Main Menu"] + names
                         while True:
                             for i, stash in enumerate(stash_options):
@@ -757,9 +751,9 @@ def prompt_stash_menu():
                                 continue
                 case "Drop Stash":
                     if not repo_has_stashes():
-                        print("There are no stashes in this repo.")
+                        print("\nThere are no stashes in this repo.")
                     else:
-                        print("Note: This will drop the stored copy of the selected stash.")
+                        print("\nNote: This will drop the stored copy of the selected stash.")
                         stash_options = ["Back to Main Menu"] + names
                         while True:
                             for i, stash in enumerate(stash_options):

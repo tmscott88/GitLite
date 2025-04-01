@@ -4,6 +4,8 @@ See below for what has been successfully ported from `start.sh` -> `gitlite.py`,
 
 ## (TBD) 0.8.5
 
+- [] Refactoring: Split the main script into new modules
+
 - [] Interactive "Setup" menu - make **GitLite** friendlier. If config file doesn't exist, ask to auto-generate new file with appropriate parameters
 - [] Add further config file verification, section by section, key by key
 - [] Keep the app as flexible as possible, even without a valid config file. Use reasonable defaults, perhaps offer to create the config.ini file with pre-populated vallues. Upload to the repo without including it in tracking.
@@ -13,18 +15,17 @@ See below for what has been successfully ported from `start.sh` -> `gitlite.py`,
 - [] Add branches, rebasing, merging?
 - [] Add option/choice to automatically stage changes before stashing.
 
-## (WIP) 0.8.4
+## 0.8.4
 
-- [] Feature: Add stashing
+- [x] Feature: Add stashing
 - [x] Add "About" option to main menu
 - [x] Improve Settings menu to mimic `config.ini` structure. See `README.md` for the new base config file.
 - [x] Remove unnecessary shell calls, change all subprocess calls to explicit parts
-- [x] Improve error when an app cannot be found or crashes on execution.
 - [x] CRITICAL: prevent GitLite from attempting to load external app when invalid app reference is set in `config.ini` (i.e. by manual intervention, a previous session) outside of the Settings Menu.
+- [x] Improve/clarify initial arguments
 
 - [] Cross-platform fixes (Windows, macOS, Linux)
 - [] BUG: macOS build not reading directory properly.
-- [] Improve/clarify initial arguments
 
 ## 0.8.3
 
