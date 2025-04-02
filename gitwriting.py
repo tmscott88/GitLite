@@ -506,7 +506,7 @@ def prompt_start():
         print_config_not_found_error()
     else:
         if is_daily_notes_enabled():
-            options = ["Back to Main Menu", "New/Open", "Open Recent" "Browse", "Open Daily Note"]
+            options = ["Back to Main Menu", "New/Open", "Open Recent", "Browse", "Open Daily Note"]
     while True:
         print_options(options, "Start")
         try:
