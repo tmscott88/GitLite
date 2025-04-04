@@ -1,55 +1,25 @@
 import os
-import sys
-from commands import Command
 
-__version = "0.8.4"
-
-def __get_platform():
-    match(os.name):
-        case "nt":
-            return "Windows"
-        case "posix":
-            return "Unix"
-        case _:
-            return "Other"
-
-def get_current_dir():
-    current = os.path.dirname(os.path.abspath(sys.argv[0]))
-    unix_converted = current.strip().replace(os.sep, '/')
-    return unix_converted
-
-# TODO test this a lot
-def new_file_converted(fpath):
+def convert_to_unix_path(fpath):
+    """Replaces the current system's default path seperators with the standard Unix forward slash"""
     return os.path.join(get_current_dir(), fpath).replace(os.set, '/')
-
-def prompt_exit():
-    print("\nPress any key to exit...")
-    k = readchar.readchar()
-    sys.exit()
-
-def print_splash():
-    print(f"\n[GitWriting {__version}]")
-    print("Author: Tom Scott (tmscott88)")
-    print("https://github.com/tmscott88/GitWriting")
-
-def print_system():
-    print(f"Platform: {__get_platform()}")
-    print(f"Python: {sys.version[:7]}")
-
-# def print_options(options, title):
-#     print(f"\n[{title}]")
-#     for i, opt in enumerate(options):
-#         print(f"{i+1}. {opt}")
 
 def create_new_file(new_path):
     """Returns True if a new file is created or already exists, False if not created."""
+    # print(f"\nReceived path {new_path}.")
+    converted_path = convert_to_unix_path(new_path)
     if not is_existing_file(new_path) and not is_existing_directory(new_path):
         try:
-            os.makedirs(os.path.dirname(new_path), exist_ok=True)
+            # Only make new directory/directories if the file path forms a directory.
+            if os.path.dirname(new_path) != "":
+                os.makedirs(os.path.dirname(new_path), exist_ok=True)
+            # print(f"\nos.path.dirname: {os.path.dirname(new_path)}")
             f = open(new_path, 'w')
-            print(f"\nCreated file {new_path}.")
-        except subprocess.CalledProcessError as e:
+            # print(f"\nCreated file {f}.")
+        except Exception as e:
             print(f"\nCould not create file '{new_path}'. {e}")
+    elif not is_existing_file(new_path) and is_existing_directory(new_path):
+        print(f"\nA folder '{new_path}' already exists in this directory. Please create a different file name or directory.")
 
 def create_new_directory(new_path):
     """Returns True if a new directory is created, False if not created."""
@@ -71,7 +41,7 @@ def create_new_directory(new_path):
             return False
     # if directory doesn't exist but conflicting file exists
     elif not is_existing_directory(new_path) and is_existing_file(new_path):
-        print(f"\nA file '{new_path}' already exists in this directory.")
+        print(f"\nA file '{new_path}' already exists in this directory. Please create a different directory name.")
     # TODO move this to interactive class
     # else:
     #     set_daily_notes_path(new_path)

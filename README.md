@@ -49,9 +49,6 @@ editor = micro
 [DAILY_NOTES]
 status = off
 path = daily
-
-[MISC]
-commit_limit = 15
 ```
 
 1. Create `config.ini` in the project's root directory

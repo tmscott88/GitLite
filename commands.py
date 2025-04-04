@@ -92,7 +92,12 @@ class AppCommand(Command):
         
     def open_editor(self, editor, fpath):
         self.run(f"{editor} {fpath}")
-        
+
+    # TODO maybe use this later in the custom file browser
+    def view_file(self, fpath):
+        """View a file in readonly mode"""
+        self.run(f"less {fpath}")
+
     # TODO create custom browser instead
     # def open_system_browser():
     #     # browser = get_system_browser()

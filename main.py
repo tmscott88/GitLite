@@ -1,9 +1,11 @@
 # Python Modules
+import os
 import sys
 import functools
 from shutil import which
 # My Modules
-import utils
+import app_utils
+import file_utils
 from config import AppConfig
 from commands import GitCommand, AppCommand
 from menu import Menu
@@ -14,9 +16,53 @@ app_cmd = AppCommand()
 
 def main():
     # repo = GitRepository(".")
-    config.read()
-    utils.print_splash()
+    while len(sys.argv) > 1:
+        handle_launch_args()
+
+    # TODO: interactive prompts for first-time config setup
+    if not config.is_present():
+        # config.generate()
+        prompt_create_config()
+    else:
+        config.read()
+    app_utils.show_splash()
+        
     main_menu()
+
+def prompt_create_config():
+    print(f"\nWelcome to GitWriting!")
+    print("\n* Let's get you set up and writing!")
+    config.generate()
+    print(f"? Questions? Visit '{app_utils.project_url}' for more information.")
+    print("\n* First, please enter your preferred file editor. If you are unsure or wish to use your system's default editor, just press enter.")
+    print()
+    set_app("editor")
+    print("\n* Next, please enter your preferred file browser. If you are unsure or wish to use your system's default editor, just press enter.")
+    set_app("browser")
+
+def handle_launch_args():
+    options_desc = "[Options] \nHelp: [-h | --help | -H] \nVerify Config: [-c | --config | -C] \nVersion: [-v | --version | -V], \nView README: [-r | --readme | -R]"
+    usage_desc = f"\n[Usage] \n./{os.path.basename(__file__)} [OPTION]\n"
+    parser_desc = f"\nSettings are defined in '{config.name}'. See 'README.md' for a template config file."
+
+    option = sys.argv[1]
+    if option in ("-h", "--help", "-H"):
+        print(usage_desc)
+        print(options_desc)
+        print(parser_desc)
+    elif option in ("-c", "--config", "-C"):
+        config.read()
+        config.show()
+    elif option in ("-v", "--version", "-V"):
+        app_utils.print_version()
+    elif option in ("-r", "--readme", "-R"):
+        app_cmd.view_file("README.md")
+    else:
+        print(f"\nUnknown Option: {option}")
+        print(usage_desc)
+        print(options_desc)
+    sys.exit(1)
+    sys.argv.pop(1)
 
 def main_menu():
     menu = Menu("Main Menu")
@@ -33,8 +79,9 @@ def main_menu():
     menu.add_option(11, "Git Clean (Untracked)", git_cmd.clean_interactive)
     menu.add_option(12, "Reset to Commit", commits_menu)
     menu.add_option(13, "Settings", settings_menu)
-    menu.add_option(14, "About GitWriting", show_about)
-    menu.add_option(15, "Quit", sys.exit)
+    menu.add_option(14, "Help", help_menu)
+    menu.add_option(15, "About GitWriting", app_utils.show_about)
+    menu.add_option(16, "Quit", sys.exit)
 
     git_cmd.show_changes()
     menu.show()
@@ -44,27 +91,24 @@ def start_menu():
     menu.add_option(1, "Back to Main Menu", main_menu)
     menu.add_option(2, "New/Open", new_file)
     menu.add_option(3, "Open Recent", recents_menu)
-    menu.add_option(4, "Browse", open_browser)
+    menu.add_option(4, "Browse", functools.partial(open_app, "browser"))
     git_cmd.show_changes()
     menu.show()
 
 def new_file():
     path = input("Enter new file name (or pass empty file name to cancel): ")
     if not path:
-        print("\nCanceled")
+        print("\nCanceled operation.")
     else:
-        if utils.is_existing_file(path):
-            open_editor(path)
-        elif not utils.is_existing_file(path) and utils.is_existing_directory(path):
-            print(f"\nA folder '{new_path}' already exists in this directory. Please choose a different file name or path.")
+        if file_utils.is_existing_file(path):
+            open_app("editor", path)
         else:
-            utils.create_new_file(path)
+            file_utils.create_new_file(path)
             # Only open editor if file was created properly from the previous step
-            if utils.is_existing_file(path):
-                open_editor(path)
-            else:
-                print(f"\nCould not create or find file '{path}")
-
+            if file_utils.is_existing_file(path):
+                open_app("editor", path)
+            # else:
+                # print(f"\nCould not create or find file '{path}'")
 
 def recents_menu():
     menu = Menu("Open Recent")
@@ -77,7 +121,7 @@ def recents_menu():
         menu.add_option(1, "Back to Main Menu", main_menu)
         i = 2
         for opt in options:
-            menu.add_option(i, opt, functools.partial(open_editor, opt))
+            menu.add_option(i, opt, functools.partial(open_app, "editor", opt))
             i = i + 1
         menu.show()
 
@@ -153,9 +197,15 @@ def settings_menu():
     menu.add_option(4, "Enable Daily Notes", functools.partial(set_daily_notes_status, "on"))
     menu.add_option(5, "Disable Daily Notes", functools.partial(set_daily_notes_status, "off"))
     menu.add_option(6, "Set Daily Notes Path", set_daily_notes_path)
-    menu.add_option(7, "Set Commit Display Limit", set_commit_limit)
+    # menu.add_option(7, "Set Commit Display Limit", set_commit_limit)
     config.read()
     config.show()
+    menu.show()
+
+def help_menu():
+    menu = Menu("About")
+    menu.add_option(1, "Back to Main Menu", main_menu)
+    menu.add_option(2, "View Config (Template)", app_utils.show_config_template)
     menu.show()
 
 def set_daily_notes_status(new_status):
@@ -170,7 +220,7 @@ def set_daily_notes_status(new_status):
 def set_daily_notes_path():    
     new_path = input("Set new Daily Notes path (or pass empty message to cancel): ")
     if new_path:
-        utils.create_new_directory(new_path)
+        file_utils.create_new_directory(new_path)
     else:
         print(f"\nCanceled. Keep current path: '{config.get_daily_notes_path()}'")  
     try:
@@ -189,86 +239,72 @@ def set_app(app_type):
             else:
                 config.set_app(app_type, new_app)
         except FileNotFoundError:
-            config.print_app_error(new_app)
+            config.show_app_not_found_error(new_app)
         except Exception as e:
             print(f"\nCould not set {app_type} to '{new_app}'. {e}")
 
-def set_commit_limit():
-    new_limit = input("Set new commit display limit (or pass empty message to cancel): ")
-    if not new_limit:
-        print(f"\nCanceled. Keep current commit limit: {config.get_commit_limit()}")
-    elif (int(new_limit) < 1):
-        print("\nLimit must be a positive integer")
-    else:
-        try:
-            config.set_commit_limit(new_limit)
-        except Exception as e:
-            print(f"\nCould not set commit limit to '{new_limit}'. {e}")
+# def set_commit_limit():
+#     new_limit = input("Set new commit display limit (or pass empty message to cancel): ")
+#     if not new_limit:
+#         print(f"\nCanceled. Keep current commit limit: {config.get_commit_limit()}")
+#     elif (int(new_limit) < 1):
+#         print("\nLimit must be a positive integer")
+#     else:
+#         try:
+#             config.set_commit_limit(new_limit)
+#         except Exception as e:
+#             print(f"\nCould not set commit limit to '{new_limit}'. {e}")
 
 def reset(reset_type, commit):
     git_cmd.reset
     confirm_reset()
 
-def show_about():
-    utils.print_splash()
-    utils.print_system()
-
 # TODO create custom CLI browser, maybe a menu similar to the Log() screen
-def open_browser():
+def open_app(app_type, fpath=""):
     # # if not has_valid_config():
     #     open_system_browser()
     #     return
-    # else: 
-    browser = config.get_app('browser')
-    try:
-        if (which(browser)) is None:
-            raise FileNotFoundError
-        else:
-            app_cmd.open_browser(browser)
-    except (FileNotFoundError):
-        print_app_error(browser)
-        # open_system_browser()
-    except Exception as e:
-        print(f"\nCould not open browser '{browser}'. {e}")
-        # open_system_browser()
+    # else:
+    valid_app_types = ["browser", "editor"]
+    if app_type not in valid_app_types:
+        print(f"\nUnknown app type {app_type}. Valid app types are {valid_app_types}.")
+        return
+    else:
+        app = config.get_app(app_type)
+        try:
+            if (which(app)) is None:
+                raise FileNotFoundError
+            else:
+                match(app_type):
+                    case "browser":
+                        app_cmd.open_browser(app)
+                    case "editor":
+                        app_cmd.open_editor(app, fpath)
+        except (FileNotFoundError):
+            config.show_app_not_found_error(app)
+            # open_system_browser()
+        except Exception as e:
+            print(f"\nCould not open {app_type} app '{app}'. {e}")
+            # open_system_browser()
 
 # TODO create custom browser instead
 # def open_system_browser():
 #     # browser = get_system_browser()
-#     if utils.get_platform() == "Unix":
+#     if app_utils.get_platform() == "Unix":
 #         return
 #         # Unix lacks a default/standard file manager, while Windows lacks a standard TTY editor (unless you want to use 'copy con'). Pros and cons. You can't win them all...
-#     elif utils.get_platform() == "Windows":
+#     elif app_utils.get_platform() == "Windows":
 #         # TODO add default Window browser
 #         # if get_platform() == "Windows":
 #         #     then open File Explorer
 #         print(f"\nWindows system browser coming soon.")
     
-def open_editor(fpath):
-    # if not has_valid_config():
-        # Open default system editor (Unix & Windows supported)
-        # self.open_system_editor(fpath)
-        # return
-    # else: 
-    editor = config.get_app('editor')
-    try:
-        if (which(editor)) is None:
-            raise FileNotFoundError
-        else:
-            app_cmd.open_editor(editor, fpath)
-    except (FileNotFoundError):
-        print_app_error(editor)
-        # open_system_editor(fpath)
-    except Exception as e:
-        print(f"\nCould not open editor '{editor}'. {e}")
-        # open_system_editor(fpath)
-    
-def open_system_editor(fpath):
-    editor = app_cmd.get_system_editor()
-    if get_platform() == "Unix":
+def open_system_app(fpath):
+    app = app_cmd.get_system_editor()
+    if app_utils.get_platform() == "Unix":
         print(f"\nWarning: No config file to read editor from. Opening default editor '{editor}'...")
         if editor:
-            app_cmd.open_editor(editor, fpath)
+            open_app(editor, fpath)
         else:
             print(f"\nCould not retrieve default editor.")
             return
