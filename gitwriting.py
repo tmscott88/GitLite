@@ -9,7 +9,7 @@ from shutil import which
 from datetime import datetime
 
 __parser = configparser.ConfigParser()
-__version_num = "0.8.3-9"
+__version_num = "0.8.3-10"
 __config = "config.ini"
 
 def main():
@@ -215,7 +215,6 @@ def create_new_directory(new_path):
             os.makedirs(new_path, exist_ok=True)
             if is_existing_directory(new_path):
                 set_daily_notes_path(new_path)
-                
             else:
                 print(f"\nPath creation failed. Keep current path: '{get_daily_notes_path()}'.")
                 return
@@ -405,11 +404,11 @@ def print_config_not_found_error():
     print(f"\nPlease create and place `{__config}' in your Git repo's root directory.")
     print(f"\nSee the included README or visit https://github.com/tmscott88/GitWriting/blob/main/README.md for further instructions.")
 
-def run(command_args, message):
+def run(command_args, success_message):
     try:
         subprocess.run(command_args, check=True)
-        if message != "":
-            print(f"\n{message}")
+        if success_message != "":
+            print(f"\n{success_message}")
     except FileNotFoundError as e:
         print(f"\nFileNotFoundError: {e}")
     except subprocess.CalledProcessError as e:
@@ -438,7 +437,8 @@ def main_menu():
                         if not diff:
                             print("\nNo tracked changes to analyze.")
                         else:
-                            run(['git', 'diff'], "")
+                            prompt_diff()
+                            # run(['git', 'diff'], "")
                     case "Pull":
                         run(['git', 'pull'], "")
                     case "Push":
@@ -561,6 +561,7 @@ def prompt_resume():
     else:
         options = ["Back to Main Menu"] + files 
         while True:
+            print("\n[Open Recent]")
             for i, file in enumerate(options):
                 print(f"{i+1}. {file}")
             try:
@@ -573,6 +574,34 @@ def prompt_resume():
                     file = options[choice]
                     open_editor(file)
                     break
+            except (ValueError, IndexError):
+                print("\nInvalid input.")
+
+# Similar to prompt_resume(), except for 'git diff' instead
+def prompt_diff():
+    files = []
+    try:
+        files = subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines()
+        # Cut leading status letter (e.g. "M")
+    except subprocess.CalledProcessError as e:
+        print(f"\nCould not get tracked files: {e}") 
+    if not files:
+        return
+    else:
+        options = ["Back to Main Menu"] + files 
+        while True:
+            print("\n[View Diff]")
+            for i, file in enumerate(options):
+                print(f"{i+1}. {file}")
+            try:
+                choice = int(input("Choose an option: ")) - 1
+                if choice not in range(0, len(options)):
+                    raise ValueError()
+                elif choice == 0:
+                    break
+                else:
+                    file = options[choice]
+                    run(['git', 'diff', file], "")
             except (ValueError, IndexError):
                 print("\nInvalid input.")
 
@@ -812,7 +841,7 @@ def prompt_select_commit():
     else:
         options = ["Back to Main Menu"] + hashes
         while True:
-            print("\n[Select Commit]")
+            print("\n[Reset to Commit]")
             for i, commit in enumerate(options):
                 print(f"{i+1}. {commit}")
             try:

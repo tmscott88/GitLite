@@ -10,7 +10,6 @@ See below for what has been successfully ported from `start.sh` -> `gitlite.py`,
 - [] Add further config file verification, section by section, key by key
 - [] Keep the app as flexible as possible, even without a valid config file. Use reasonable defaults, perhaps offer to create the config.ini file with pre-populated vallues. Upload to the repo without including it in tracking.
 - [] Rework "Open Recent" menu to list files by different filters (modification date, uncommitted, etc). Provide different options.
-- [] Create "Diff" menu; Show `git diff` by choice of file rather than for all tracked, uncommitted files at once.
 - [] Create a custom file browser (similar to the Log menu)
 - [] Add branches, rebasing, merging?
 - [] Add option/choice to automatically stage changes before stashing.
@@ -23,6 +22,7 @@ See below for what has been successfully ported from `start.sh` -> `gitlite.py`,
 - [x] Remove unnecessary shell calls, change all subprocess calls to explicit parts
 - [x] CRITICAL: prevent GitLite from attempting to load external app when invalid app reference is set in `config.ini` (i.e. by manual intervention, a previous session) outside of the Settings Menu.
 - [x] Improve/clarify initial arguments
+- [x] "View Diff" menu; Show `git diff` by choice of file rather than for all tracked, uncommitted files at once.
 
 - [] Cross-platform fixes (Windows, macOS, Linux)
 - [] BUG: macOS build not reading directory properly.
@@ -92,3 +92,5 @@ New Features
   - [x] Hard
   - [x] Soft
 - [x] Quit
+
+Making some more changes here.

@@ -90,3 +90,5 @@ Inspired by Obsidian, Daily Notes allow you to quickly create a diary within you
 - Revert (Interactive Checkout)
 - Discard (Interactive Clean)
 - Reset (Mixed, Soft, Hard)
+
+Making some changes down here.
