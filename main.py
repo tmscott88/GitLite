@@ -205,7 +205,7 @@ def prompt_stash_message(include_untracked=False):
     message = input("Enter stash message (or pass empty message to cancel): ")
     if message:
         if include_untracked:
-            git_cmd.stage_all_changes(message)
+            git_cmd.stash_all_changes(message)
         else:
             git_cmd.stash_staged_changes(message)
     else:
