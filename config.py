@@ -17,7 +17,6 @@ class Config:
             if not quiet:
                 app.print_error(f"Error while reading config file. {e}")
             raise
-                
     def get_value(self, section, option):
         try:
             return self.parser.get(section, option)
@@ -69,9 +68,8 @@ class AppConfig(Config):
         """Returns a file path based on the current date, ordered by each year and month (Default: DAILY_NOTES_ROOT/YEAR/YEAR-MONTH/YEAR-MONTH-DAY.md)"""
         root = self.get_daily_notes_root_path()
         now = datetime.now().strftime("%F")
-        # ['YEAR', 'MONTH', 'DAY'] 
+        # ['YEAR', 'MONTH', 'DAY']
         date_arr = now.split("-")
-        day = date_arr[2]
         year_month = f"{date_arr[0]}-{date_arr[1]}"
         note_filename = f"{date_arr[0]}-{date_arr[1]}-{date_arr[2]}.md"
         full_note_path = os.path.join(root, date_arr[0], year_month, note_filename)
@@ -107,10 +105,8 @@ class AppConfig(Config):
         self.set_value('DAILY_NOTES', 'path', new_path)
         
     def show_app_not_found_error(self, name):
-        app.print_error(f"App '{name}' not found.") 
-        app.print_info("Ensure that the app's name is defined correctly in '{self.name}' and installed systemwide.\n", new_line=False) 
-        # if (app.platform_is_windows()):
-        #     app.print_warning("Windows Terminal/CMD/Powershell is not recommended.\n", new_line=False) 
+        app.print_error(f"App '{name}' not found.")
+        app.print_info("Ensure that the app's name is defined correctly in '{self.name}' and installed systemwide.\n", new_line=False)
 
     def show_config_read_error(self):
         app.print_error(f"Failed to read expected config file '{self.name}'. Functionality will be limited until this is resolved.") 
@@ -138,9 +134,8 @@ class AppConfig(Config):
                 app.print_success(f"Deleted config file '{self.name}'")
             else:
                 app.print_info(f"{self.name} not found.")
-            app.print_warning(f"GitWriting must be restarted in order to continue.")
+            app.print_warning("GitWriting must be restarted in order to continue.")
             app.prompt_exit()
         except Exception as e:
             app.print_error(f"Error while performing reset: {e}")
             app.prompt_exit()
-

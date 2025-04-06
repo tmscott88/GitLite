@@ -20,7 +20,7 @@ def main():
     # TODO testing macOS package not finding proper directories
     app.show_splash()
     if not app.is_valid_repo():
-        app.print_error(f"Failed to detect a valid Git repo from the current folder.") 
+        app.print_error("Failed to detect a valid Git repo from the current folder.")
         app.print_warning("Please place this executable in your Git repo's root directory.", new_line=False)
         app.prompt_exit()
     else:
@@ -31,9 +31,9 @@ def main():
         main_menu()
 
 def prompt_create_config():
-    print(f"\nWelcome to GitWriting!")
+    print("\nWelcome to GitWriting!")
     print("\nLet's get you set up and writing!")
-    app.print_info("First, you will need to generate a configuration file. This file contains key app settings for GitWriting to use between sessions.")
+    app.print_info("First, let's generate a configuration file. This file contains key app settings for GitWriting to use between sessions.")
     if not app.prompt_continue():
         print("\nBye.")
         sys.exit()
@@ -46,6 +46,16 @@ def prompt_create_config():
         app.print_question("Please enter your preferred file browser. (Or press enter to use the default file browser)")
         set_app("browser")
         # Once finished
+        app.print_question("Enable daily notes? This feature serves as a shortcut to create a new note each day, neatly organized by date.")
+        if app.prompt_continue():
+            set_daily_notes_status("on")
+        else:
+            set_daily_notes_status("off")
+        if config.is_daily_notes_enabled():
+            app.print_question("Since you enabled daily notes, you may set the default path for daily notes now. (Or press enter to use the default path)")
+            set_daily_notes_path()
+        else:
+            app.print_info("Skipping daily notes path selection...")
         config.show()
         app.print_success("That's all!")
         app.print_info("These settings can be changed anytime under [Main Menu -> Settings].")
@@ -72,13 +82,13 @@ def handle_launch_args():
     elif option in ("-v", "--version", "-V"):
         app.print_version()
     elif option in ("-r", "--readme", "-R"):
-        app_cmd.view_file("README.md")
+        app.show_readme()
     else:
         app.print_error(f"Unknown Option: {option}")
         print(usage_desc)
         print(options_desc)
-    sys.exit(1)
     sys.argv.pop(1)
+    sys.exit(1)
 
 def main_menu():
     menu = Menu("Main Menu")
@@ -116,7 +126,7 @@ def new_file():
     path = input("Enter new file name (or pass empty name to cancel): ")
     if not path:
         print()
-        app.print_error(f"Canceled operation.")
+        app.print_error("Canceled operation.")
     else:
         if file.is_existing_file(path):
             open_app("editor", path)
@@ -177,10 +187,10 @@ def prompt_commit():
             git_cmd.commit_changes(message)
         else:
             print()
-            app.print_error(f"Canceled commit.")
+            app.print_error("Canceled commit.")
 
 def stash_menu():
-    menu = Menu(f"Stash")
+    menu = Menu("Stash")
     menu.add_option(1, "Back to Main Menu", main_menu)
     menu.add_option(2, "Create Stash", prompt_create_stash)
     menu.add_option(3, "Apply Stash", functools.partial(stashes_menu, "apply"))
@@ -194,7 +204,7 @@ def prompt_create_stash():
         app.print_warning("No changes available to stash.")
         return
     else:
-        menu = Menu(f"Create Stash")
+        menu = Menu("Create Stash")
         menu.add_option(1, "Go Back", stash_menu)
         menu.add_option(2, "Stash All", functools.partial(prompt_stash_message, include_untracked=True))
         menu.add_option(3, "Stash Staged Only", functools.partial(prompt_stash_message, include_untracked=False))
@@ -210,10 +220,10 @@ def prompt_stash_message(include_untracked=False):
             git_cmd.stash_staged_changes(message)
     else:
         print()
-        app.print_error(f"Canceled stash.")
+        app.print_error("Canceled stash.")
 
 def stashes_menu(operation):
-    menu = Menu(f"Select a Stash")
+    menu = Menu("Select a Stash")
     options = git_cmd.get_stashes_names_only()
     if not options:
         app.print_warning("No stashes available in this repo.")
@@ -231,21 +241,20 @@ def confirm_existing_stash_operation(operation, stash):
     if not git_cmd.get_stashes():
         app.print_warning("No stashes available in this repo.")
         return
-    else: 
-        match(operation):
-            case "apply":
-                app.print_warning("Note: This will apply the stored copy of the stash and preserve it in the local tree.")
-            case "pop":
-                app.print_warning("Note: This will apply the stored copy of the selected stash and remove it from the local tree.")
-            case "drop":
-                app.print_warning("Note: This will permanently remove the stored copy of the selected stash.")
-            case _:
-                app.print_error(f"Stash operation {operation} is invalid.")
-                return
-        menu = Menu(f"{operation.upper()} stash '{stash}'?")
-        menu.add_option(1, "Yes", functools.partial(git_cmd.existing_stash_operation, operation, stash))
-        menu.add_option(2, "No", stash_menu)
-        menu.show(post_action=stash_menu)
+    match(operation):
+        case "apply":
+            app.print_warning("Note: This will apply the stored copy of the stash and preserve it in the local tree.")
+        case "pop":
+            app.print_warning("Note: This will apply the stored copy of the selected stash and remove it from the local tree.")
+        case "drop":
+            app.print_warning("Note: This will permanently remove the stored copy of the selected stash.")
+        case _:
+            app.print_error(f"Stash operation {operation} is invalid.")
+            return
+    menu = Menu(f"{operation.upper()} stash '{stash}'?")
+    menu.add_option(1, "Yes", functools.partial(git_cmd.existing_stash_operation, operation, stash))
+    menu.add_option(2, "No", stash_menu)
+    menu.show(post_action=stash_menu)
 
 def commits_menu():
     menu = Menu("Select a Commit")
@@ -274,7 +283,7 @@ def confirm_reset(reset_type, commit):
     menu.add_option(1, "Yes", functools.partial(reset, reset_type, commit))
     menu.add_option(2, "No", commits_menu)
     git_cmd.show_commits()
-    menu.show()
+    menu.show(post_action=main_menu)
 
 def confirm_factory_reset():
     app.print_warning("Reset GitWriting back to default settings?  (! THIS WILL ERASE THE EXISTING CONFIG FILE !)")
@@ -301,7 +310,8 @@ def settings_menu():
 def help_menu():
     menu = Menu("Help")
     menu.add_option(1, "Back to Main Menu", main_menu)
-    menu.add_option(2, "View Config Example", config.show_config_template)
+    menu.add_option(2, "View README", app.show_readme)
+    menu.add_option(3, "View Config Example", config.show_config_template)
     menu.show()
 
 def set_daily_notes_status(new_status):
@@ -344,43 +354,39 @@ def set_app(app_type):
                 config.show_app_not_found_error(new_app)
 
 def reset(reset_type, commit):
-    git_cmd.reset
-    confirm_reset()
+    git_cmd.reset(reset_type, commit)
 
 # TODO create custom CLI browser, maybe a menu similar to the Log() screen
 def open_app(app_type, fpath=""):
-    # if config isn't there (unlikely at this point but could happen), fallback to the system default app
+    # if config isn't there, fallback to the system default app
     if not config.is_present():
         open_system_app(app_type, fpath)
         app.print_warning("Config file not found. Opening default system app...")
         return
-    else:
-        valid_app_types = ["browser", "editor"]
-        if app_type not in valid_app_types:
-            app.print_error(f"Unknown app type {app_type}. Valid app types are {valid_app_types}.")
-            return
-        else:
-            app = config.get_app(app_type)
-            try:
-                if (which(app)) is None:
-                    raise FileNotFoundError
-                else:
-                    match(app_type):
-                        case "browser":
-                            app_cmd.open_browser(app)
-                        case "editor":
-                            app_cmd.open_editor(app, fpath)
-            except (FileNotFoundError, Exception):
-                config.show_app_not_found_error(app)
-                open_system_app(app_type, fpath)
+    valid_app_types = ["browser", "editor"]
+    if app_type not in valid_app_types:
+        app.print_error(f"Unknown app type {app_type}. Valid app types are {valid_app_types}.")
+        return
+    app_name = config.get_app(app_type)
+    try:
+        if (which(app_name)) is None:
+            raise FileNotFoundError
+        match(app_type):
+            case "browser":
+                app_cmd.open_browser(app_name)
+            case "editor":
+                app_cmd.open_editor(app_name, fpath)
+    except (FileNotFoundError, Exception):
+        config.show_app_not_found_error(app_name)
+        open_system_app(app_type, fpath)
 
 def open_system_app(app_type, fpath=""):
-    app = app.get_system_app(app_type)
+    app_name = app.get_system_app(app_type)
     match app_type:
         case "editor":
-            app_cmd.open_editor(app, fpath)
+            app_cmd.open_editor(app_name, fpath)
         case "browser":
-            app_cmd.open_browser(app)
+            app_cmd.open_browser(app_name)
         case _:
             app.print_error(f"App type '{app_type}' is not supported. Failed to retrieve default app for this type.")
 

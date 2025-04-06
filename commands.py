@@ -2,13 +2,23 @@ import subprocess
 import app_utils as app
 
 class Command:
-    def run(self, command):
-        """Execute a command."""
+    def run(self, command, has_input_message=False):
+        """Execute a command. If has_input_message is True, you MUST pass the command as an array with explicit arguments (e.g. ['git', 'commit', '-m', f"{message}"])"""
         try:
-            subprocess.run(command.split(), text=True)
+            if has_input_message:
+                subprocess.run(command, text=True)
+            else:
+                subprocess.run(command.split(), text=True)
         except Exception as e:
             app.print_error(f"Command '{command}' failed: {e}")
         
+    def run_shell_mode(self, command):
+        """Execute a command with shell enabled. DO NOT CALL THIS UNLESS NECESSARY! IF THE COMMAND WORKS FINE WITH 'Command.run()', USE THAT INSTEAD!"""
+        try:
+            subprocess.run(command.split(), text=True, shell=True)
+        except Exception as e:
+            app.print_error(f"Command '{command}' failed: {e}")
+
     def get_output(self, command):
         """Verify and return the array output of a command."""
         try:
@@ -16,7 +26,10 @@ class Command:
         except Exception as e:
             app.print_error(f"Failed to get output from command '{command}': {e}")
 
-class GitCommand(Command):    
+class GitCommand(Command):
+    def get_repo_root(self):
+        return self.get_output("git rev-parse --show-toplevel")[0]
+
     def get_changes(self):
         return self.get_output("git status -s -u")
 
@@ -59,13 +72,13 @@ class GitCommand(Command):
         self.run("git add -i")
 
     def commit_changes(self, message):
-        self.run(f'git commit -m "{message}"') 
+        self.run(['git', 'commit', '-m', f"{message}"], has_input_message=True) 
 
     def stash_all_changes(self, message):
-        self.run(f'git stash push -u -m "{message}"')
+        self.run(['git', 'stash', 'push', '-u', '-m', f"{message}"], has_input_message=True)
 
     def stash_staged_changes(self, message):
-        self.run(f'git stash push --staged -m "{message}"')
+        self.run(['git', 'stash', 'push', '--staged', '-m', f"{message}"], has_input_message=True)
 
     def existing_stash_operation(self, operation, stash):
         match(operation):
@@ -121,33 +134,7 @@ class AppCommand(Command):
     # TODO maybe use this later in the custom file browser
     def view_file(self, fpath):
         """View a file in readonly mode"""
-        # TODO if windows and cmd or terminal
         if app.platform_is_windows():
-            self.run(f"more {fpath}")
+            self.run_shell_mode(f"more {fpath}")
         else:
-            self.run(f"less {fpath}")
-
-    # TODO create custom browser instead
-    # def open_system_browser():
-    #     # browser = get_system_browser()
-    #     if utils.get_platform() == "Unix":
-    #         return
-    #         # Unix lacks a default/standard file manager, while Windows lacks a standard TTY editor (unless you want to use 'copy con'). Pros and cons. You can't win them all...
-    #     elif utils.get_platform() == "Windows":
-    #         # TODO add default Window browser
-    #         # if get_platform() == "Windows":
-    #         #     then open File Explorer
-    #         print(f"\nWindows system browser coming soon.")
-    # def open_system_editor(self, fpath):
-    #     editor = get_system_editor()
-    #     if get_platform() == "Unix":
-    #         app.print_warning(f": No config file to read editor from. Opening default editor '{editor}'...")
-    #         if editor:
-    #             self.run(f"{editor} {fpath}")
-    #         else:
-    #             print(f"\nFailed to retrieve default editor.")
-    #             return
-    #     elif get_platform() == "Windows":
-    #         print(f"\nWindows system editor function coming soon.")
-    #         # TODO add default Windows editor
-    #         # open Notepad or maybe search for nano and route there            
+            self.run(f"less {fpath}")        

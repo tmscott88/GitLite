@@ -3,19 +3,22 @@ import os
 import sys
 from readchar import readkey, key
 # My modules
-from commands import Command
+from commands import GitCommand, AppCommand
 
-__version = "0.8.5"
+__version = "0.8.5-2"
 project_url = "https://github.com/tmscott88/GitWriting" 
 
 def convert_to_unix_path(fpath):
     """Replaces the current system's default path seperators with the standard Unix forward slash"""
     return fpath.strip().replace(os.sep, '/')
 
-def get_current_dir():
-    """Returns the directory that this app is running in as a Unix-formatted path"""
+def get_current_dir(convert=True):
+    """Returns the directory that this app is running. Converts to standard Unix path by default. On Windows, will return in Windows backslash format if set False."""
     current = os.path.dirname(os.path.abspath(sys.argv[0]))
-    return convert_to_unix_path(current)
+    if convert:
+        return convert_to_unix_path(current)
+    else:
+        return current
             
 def get_system_app(app_type):
     match(app_type):
@@ -40,11 +43,21 @@ def get_system_app(app_type):
         case _:
             print_error(f"App type '{app_type}' is not supported.")
 
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 def is_valid_repo():
     """Check if the app is placed at the top level of a git repo"""
-    cmd = Command()
+    cmd = GitCommand()
     try:
-        git_root = cmd.get_output("git rev-parse --show-toplevel")[0]
+        git_root = cmd.get_repo_root()
         script_dir = get_current_dir()
         # print(f"\n(DEBUG) Git Root: {git_root}")
         # print(f"(DEBUG) Script Dir: {script_dir}")
@@ -59,7 +72,7 @@ def platform_is_unix():
     return os.name == "posix"
 
 # def is_running_in_windows_terminal():
-#     """Returns True if "WT_SESSION" is found as an environment variable. The Windows Terminal sets a specific environment variable, WT_SESSION, when it's running."""
+#     """Returns True if "WT_SESSION" is found as an environment variable."""
 #     return platform_is_windows() and "WT_SESSION" in os.environ
 
 def prompt_exit():
@@ -112,6 +125,10 @@ def show_about():
     print_author()
     print_system()
     prompt_continue(any_key=True)
+
+def show_readme():
+    cmd = AppCommand()
+    cmd.view_file(resource_path("README.md"))
 
 # symbols = {
 #     "error": "\u274C",
