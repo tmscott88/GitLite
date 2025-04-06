@@ -2,17 +2,21 @@
 
 See below for what has been successfully ported from `start.sh` -> `gitlite.py`, and what reamins in development. I started at version 0.8.0 for this repo since I already migrated about 80% of the former script to the current script.
 
-## (TBD) 0.8.5
+## (TBD) 0.8.6
 
-- [] Refactoring: Split the main script into new modules
-
-- [] Interactive "Setup" menu - make **GitLite** friendlier. If config file doesn't exist, ask to auto-generate new file with appropriate parameters
 - [] Add further config file verification, section by section, key by key
-- [] Keep the app as flexible as possible, even without a valid config file. Use reasonable defaults, perhaps offer to create the config.ini file with pre-populated vallues. Upload to the repo without including it in tracking.
 - [] Rework "Open Recent" menu to list files by different filters (modification date, uncommitted, etc). Provide different options.
 - [] Create a custom file browser (similar to the Log menu)
 - [] Add branches, rebasing, merging?
 - [] Add option/choice to automatically stage changes before stashing.
+
+## (WIP) 0.8.5
+
+- [x] Major Refactoring: Split the main script into new modules
+- [x] Add interactive "Setup" menu - If config file doesn't exist, walk through creating a new file instead of throwing ambiguous errors.
+- [x] If an invalid app is specified during configuration, retry the input prompt
+- [?] Add "Help" menu with offline access to the README
+- [] BUG: macOS build not reading directory properly.
 
 ## 0.8.4
 
@@ -24,8 +28,7 @@ See below for what has been successfully ported from `start.sh` -> `gitlite.py`,
 - [x] Improve/clarify initial arguments
 - [x] "View Diff" menu; Show `git diff` by choice of file rather than for all tracked, uncommitted files at once.
 
-- [] Cross-platform fixes (Windows, macOS, Linux)
-- [] BUG: macOS build not reading directory properly.
+- [x] Cross-platform fixes (Windows, macOS, Linux)
 
 ## 0.8.3
 

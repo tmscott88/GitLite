@@ -1,5 +1,5 @@
 import subprocess
-import os
+import app_utils as app
 
 class Command:
     def run(self, command):
@@ -7,24 +7,27 @@ class Command:
         try:
             subprocess.run(command.split(), text=True)
         except Exception as e:
-            print(f"Error: {e}")
+            app.print_error(f"Command '{command}' failed: {e}")
         
     def get_output(self, command):
-        """Verify and return the output of a command"""
+        """Verify and return the array output of a command."""
         try:
             return subprocess.check_output(command.split(), text=True).splitlines()
         except Exception as e:
-            print(f"Error: {e}")
+            app.print_error(f"Failed to get output from command '{command}': {e}")
 
-class GitCommand(Command):
-    def __init__(self, repo_path="."):
-        self.repo_path = repo_path
-    
+class GitCommand(Command):    
     def get_changes(self):
         return self.get_output("git status -s -u")
 
     def get_commits(self):
         return self.get_output("git log --oneline --all")
+
+    def get_stashes(self):
+        return self.get_output("git stash list")
+
+    def get_stashes_names_only(self):
+        return [name.split(":")[0] for name in self.get_stashes()]
 
     def get_commits_hashes_only(self):
         return [c[:7] for c in self.get_commits()]
@@ -56,7 +59,22 @@ class GitCommand(Command):
         self.run("git add -i")
 
     def commit_changes(self, message):
-        self.run("git commit -m f'{message}'") 
+        self.run(f'git commit -m "{message}"') 
+
+    def stash_all_changes(self, message):
+        self.run(f'git stash push -u -m "{message}"')
+
+    def stash_staged_changes(self, message):
+        self.run(f'git stash push --staged -m "{message}"')
+
+    def existing_stash_operation(self, operation, stash):
+        match(operation):
+            case "apply":
+                self.run(f"git stash apply {stash}")
+            case "pop":
+                self.run(f"git stash pop {stash}")
+            case "drop":
+                self.run(f"git stash drop {stash}")
 
     def checkout_patch(self):
         self.run("git checkout -p")
@@ -68,9 +86,15 @@ class GitCommand(Command):
         self.run(f"git reset --{type} {commit}")
     
     def show_changes(self):
-        print("\n[Changes]")
-        self.run("git status -s -u")
-    
+        if self.get_changes():
+            print("\n[Changes]")
+            self.run("git status -s -u")
+
+    def show_stashes(self):
+        if self.get_stashes():
+            print("\n[Stashes]")
+            self.run("git stash list")
+        
     def show_commits(self):
         self.run("git log --oneline --all")
 
@@ -84,19 +108,24 @@ class GitCommand(Command):
     def show_diff_for_file(self, file):
         self.run(f"git diff {file}")
 
-
 class AppCommand(Command):
     # TODO create custom CLI browser, maybe a menu similar to the Log() screen
     def open_browser(self, browser):
+        app.print_info(f"Opening browser '{browser}'...")
         self.run(browser)
         
     def open_editor(self, editor, fpath):
+        app.print_info(f"Opening '{fpath}' in '{editor}'...")
         self.run(f"{editor} {fpath}")
 
     # TODO maybe use this later in the custom file browser
     def view_file(self, fpath):
         """View a file in readonly mode"""
-        self.run(f"less {fpath}")
+        # TODO if windows and cmd or terminal
+        if app.platform_is_windows():
+            self.run(f"more {fpath}")
+        else:
+            self.run(f"less {fpath}")
 
     # TODO create custom browser instead
     # def open_system_browser():
@@ -112,11 +141,11 @@ class AppCommand(Command):
     # def open_system_editor(self, fpath):
     #     editor = get_system_editor()
     #     if get_platform() == "Unix":
-    #         print(f"\nWarning: No config file to read editor from. Opening default editor '{editor}'...")
+    #         app.print_warning(f": No config file to read editor from. Opening default editor '{editor}'...")
     #         if editor:
     #             self.run(f"{editor} {fpath}")
     #         else:
-    #             print(f"\nCould not retrieve default editor.")
+    #             print(f"\nFailed to retrieve default editor.")
     #             return
     #     elif get_platform() == "Windows":
     #         print(f"\nWindows system editor function coming soon.")

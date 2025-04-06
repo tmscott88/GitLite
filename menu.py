@@ -3,15 +3,15 @@ class Menu:
         self.options = {}
         self.title = title
 
-    def add_option(self, key, description, action, post_action=None):
-        self.options[key] = (description, action, post_action)  
+    def add_option(self, key, description, action):
+        self.options[key] = (description, action)  
 
-    def show(self):
+    def show(self, post_action=None):
         """Display the menu and handle user choice."""
         while True:
             print(f"\n[{self.title}]:")
             options = self.options.items()
-            for key, (desc, _, _) in options:
+            for key, (desc, _) in options:
                 print(f"{key}: {desc}")
             try:
                 choice = int(input("Select an option: "))
@@ -19,7 +19,7 @@ class Menu:
                     raise ValueError()
                 else:
                     self.options[choice][1]()
-                    if self.options[choice][2] != None:
-                        post_action()
             except (ValueError, IndexError):
                 print("\nInvalid input.")
+            if post_action != None:
+                post_action()

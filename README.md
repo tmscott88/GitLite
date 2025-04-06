@@ -2,22 +2,29 @@
 
 > Written in Python 3, **GitWriting** is a command-line app built for writers/editors using Git. I created this app in order to streamline my creative writing and Git workflow into one lightweight app, transitioning away from heavier GUI-based apps like Obsidian, VSCode, etc. Spend more time writing and less time typing commands.
 >
-> Builds are available for Windows and Linux, with a macOS build in the works. If using macOS, you may download `gitwriting.py` and execute that instead from `Terminal`. See below for how to install and use this app.
+> Builds are available for Windows and Linux, with a macOS build in the works. If using macOS, you may download `main.py` and execute that instead from `Terminal`. See below for how to install and use this app.
 
 ***BIG DISCLAIMER**: THIS APP IS STILL UNDER DEVELOPMENT! Right now, **GitWriting** works best with personal, linear, one-branch projects. More advanced Git operations like merging, rebasing, and merge conflict resolution are not implemented at this time.*
+
+## Requirements
+
+GitWriting supports most modern Linux distributions, macOS, and Windows 11/10/7. However, you may experience unexpected issues on older operating systems which may not support the dependencies below. GitWriting does not currently handle Git authentication or create Git repositories for you, though I am open to adding a feature like that, if the need arises.
+
+- Git (configured and authenticated)
+- A valid Git repository
+- *Python 3 (only needed for development or building from source)*
 
 ## Usage
 
 Using the executable
 
-- Place the **GitWriting-X.X.X** executable in the root directory of your local Git repository. Add an appropriate pattern to your repository's `.gitignore`, i.e. `*GitWriting`
+- Place the **GitWriting** executable in the root directory of your local Git repository. Add an appropriate pattern to your repository's `.gitignore`, i.e. `*GitWriting`
 - Launch the executable.
 
 Using the script
 
-- Place the **gitwriting.py** script in the root directory of your local Git repository. Add an appropriate pattern to your repository's `.gitignore` if you don't want the app committed, i.e. `*GitWriting*`
-- Run: `./gitwriting.py [-OPTION]`
-  - If the script won't execute, update its permissions to be executable: `chmod +x gitwriting.py`
+- Place the **main.py** script in the root directory of your local Git repository. Add an appropriate pattern to your repository's `.gitignore` if you don't want the app committed, i.e. `*GitWriting*`
+- Run: `[py | python3] main.py [-OPTION]`
 - Options: `[-h | --help | -H]` `[-o | --options | -O]` `[-v | --version | -V]`
 
 Note: A `config.ini` configuration file must be created and placed in the repo's root directory (alongside the **GitWriting** executable) in order to save and read app settings. certain features will be limited or blocked. See below for a working template.
@@ -31,20 +38,34 @@ Note: A `config.ini` configuration file must be created and placed in the repo's
 
 #### Windows & Linux (Recommended)
 
-> pyinstaller -F -n GitWriting --recursive-copy-metadata readchar gitwriting.py
+> pyinstaller -F -n GitWriting --recursive-copy-metadata readchar main.py
 
 #### macOS (NOT WORKING RIGHT NOW)
 
 `-w | --windowed | --noconsole` enables building an OSX `.app` bundle and Unix executable instead of a `console` document.
 
-> pyinstaller -F -w -n GitWriting --recursive-copy-metadata readchar gitwriting.py
+> pyinstaller -F -w -n GitWriting --recursive-copy-metadata readchar main.py
 
 ## Configuration File
 
+### Unix
+
 ```ini
 [APPS]
-browser = glow
-editor = micro
+browser = ls
+editor = nano
+
+[DAILY_NOTES]
+status = off
+path = daily
+```
+
+### Windows
+
+```ini
+[APPS]
+browser = explorer.exe
+editor = notepad.exe
 
 [DAILY_NOTES]
 status = off
@@ -53,9 +74,11 @@ path = daily
 
 1. Create `config.ini` in the project's root directory
 2. Copy the attributes above to `config.ini`.
-3. Each setting can be interactively modified through the *Main Menu -> Settings* interface.
+3. Each setting can be changed through the *Main Menu -> Settings* interface.
 
 ## Features
+
+*Note: Any additional "plugin" features like Daily Notes are disabled by default.*
 
 ### Start Menu
 
@@ -78,14 +101,12 @@ Inspired by Obsidian, Daily Notes allow you to quickly create a diary within you
 ### Git Operations
 
 - Fetch/Status
-- Log (Default, Simple, Verbose)
-- Diff (Interactive)
+- Log
+- Diff (View diff per file)
 - Pull/Push (Normal)
 - Stage (Quick, Interactive)
 - Commit
-- *Stash (Create, Apply, Pop, Drop) -> Coming Soon*
+- Stash (Create, Apply, Pop, Drop)s
 - Revert (Interactive Checkout)
 - Discard (Interactive Clean)
 - Reset (Mixed, Soft, Hard)
-
-Making some changes down here.
