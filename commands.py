@@ -122,7 +122,6 @@ class GitCommand(Command):
         self.run(f"git diff {file}")
 
 class AppCommand(Command):
-    # TODO create custom CLI browser, maybe a menu similar to the Log() screen
     def open_browser(self, browser):
         app.print_info(f"Opening browser '{browser}'...")
         self.run(browser)

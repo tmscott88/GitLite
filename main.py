@@ -9,6 +9,7 @@ import file_utils as file
 from config import AppConfig
 from commands import GitCommand, AppCommand
 from menu import Menu
+from pickers import Browser, CommitPicker
 
 config = AppConfig()
 git_cmd = GitCommand()
@@ -45,7 +46,6 @@ def prompt_create_config():
         set_app("editor")
         app.print_question("Please enter your preferred file browser. (Or press enter to use the default file browser)")
         set_app("browser")
-        # Once finished
         app.print_question("Enable daily notes? This feature serves as a shortcut to create a new note each day, neatly organized by date.")
         if app.prompt_continue():
             set_daily_notes_status("on")
@@ -56,6 +56,11 @@ def prompt_create_config():
             set_daily_notes_path()
         else:
             app.print_info("Skipping daily notes path selection...")
+        app.print_question("Show hidden files in the default file browser?")
+        if app.prompt_continue():
+            set_hidden_files_status("on")
+        else:
+            set_daily_notes_status("off")
         config.show()
         app.print_success("That's all!")
         app.print_info("These settings can be changed anytime under [Main Menu -> Settings].")
@@ -92,7 +97,17 @@ def handle_launch_args():
 
 def main_menu():
     menu = Menu("Main Menu")
-    menu.add_option(1, "Start", start_menu)
+    menu.add_option(1, "File", file_menu)
+    menu.add_option(2, "Source Control", git_menu)
+    menu.add_option(3, "Settings", settings_menu)
+    menu.add_option(4, "Help", help_menu)
+    menu.add_option(5, "About GitWriting", app.show_about)
+    menu.add_option(6, "Quit", sys.exit)
+    menu.show()
+
+def git_menu():
+    menu = Menu("Source Control")
+    menu.add_option(1, "Back to Main Menu", main_menu)
     menu.add_option(2, "Git Status", git_cmd.show_status)
     menu.add_option(3, "Git Log", git_cmd.show_log)
     menu.add_option(4, "Git Diff", diff_menu)
@@ -103,16 +118,12 @@ def main_menu():
     menu.add_option(9, "Stash Changes", stash_menu)
     menu.add_option(10, "Git Checkout (Tracked)", git_cmd.checkout_patch)
     menu.add_option(11, "Git Clean (Untracked)", git_cmd.clean_interactive)
-    menu.add_option(12, "Reset to Commit", commits_menu)
-    menu.add_option(13, "Settings", settings_menu)
-    menu.add_option(14, "Help", help_menu)
-    menu.add_option(15, "About GitWriting", app.show_about)
-    menu.add_option(16, "Quit", sys.exit)
+    menu.add_option(12, "Reset to Commit", commit_picker)
     show_stashes_and_changes()
     menu.show(post_action=show_stashes_and_changes)
 
-def start_menu():
-    menu = Menu("Start")
+def file_menu():
+    menu = Menu("File")
     menu.add_option(1, "Back to Main Menu", main_menu)
     menu.add_option(2, "New/Open", new_file)
     menu.add_option(3, "Open Recent", recents_menu)
@@ -122,18 +133,28 @@ def start_menu():
     git_cmd.show_changes()
     menu.show(post_action=git_cmd.show_changes)
 
+def commit_picker():
+    picker = CommitPicker();
+    commit = picker.show()
+    if commit:
+        reset_menu(commit[:7])
+
+def default_browser():
+    browser = Browser(app.get_runtime_directory(convert=False))
+    browser.show()
+
 def new_file():
     path = input("Enter new file name (or pass empty name to cancel): ")
     if not path:
         print()
         app.print_error("Canceled operation.")
     else:
-        if file.is_existing_file(path):
+        if file.is_file(path):
             open_app("editor", path)
         else:
             file.create_new_file(path)
             # Only open editor if file was created properly from the previous step
-            if file.is_existing_file(path):
+            if file.is_file(path):
                 open_app("editor", path)
             else:
                 app.print_error(f"Failed to create or find file '{path}'")
@@ -146,7 +167,7 @@ def recents_menu():
     if not options:
         app.print_warning("No recent files to open.")
     else:
-        menu.add_option(1, "Back to Main Menu", main_menu)
+        menu.add_option(1, "Back to File Menu", file_menu)
         i = 2
         for opt in options:
             menu.add_option(i, opt, functools.partial(open_app, "editor", opt))
@@ -159,7 +180,7 @@ def diff_menu():
     if not options:
         app.print_warning("No tracked changes to analyze.")
     else:
-        menu.add_option(1, "Back to Main Menu", main_menu)
+        menu.add_option(1, "Back to Git Menu", git_menu)
         i = 2
         for opt in options:
             menu.add_option(i, opt, functools.partial(git_cmd.show_diff_for_file, opt))
@@ -171,7 +192,7 @@ def stage_menu():
     if not git_cmd.get_changes():
         app.print_warning("No changes to stage or unstage.")
     else:
-        menu.add_option(1, "Back to Main Menu", main_menu)
+        menu.add_option(1, "Back to Git Menu", git_menu)
         menu.add_option(2, "Stage All", git_cmd.stage_all_changes)
         menu.add_option(3, "Unstage All", git_cmd.unstage_all_changes)
         menu.add_option(4, "Interactive Stage", git_cmd.stage_interactive)
@@ -191,7 +212,7 @@ def prompt_commit():
 
 def stash_menu():
     menu = Menu("Stash")
-    menu.add_option(1, "Back to Main Menu", main_menu)
+    menu.add_option(1, "Back to Git Menu", git_menu)
     menu.add_option(2, "Create Stash", prompt_create_stash)
     menu.add_option(3, "Apply Stash", functools.partial(stashes_menu, "apply"))
     menu.add_option(4, "Pop Stash", functools.partial(stashes_menu, "pop"))
@@ -205,7 +226,7 @@ def prompt_create_stash():
         return
     else:
         menu = Menu("Create Stash")
-        menu.add_option(1, "Go Back", stash_menu)
+        menu.add_option(1, "Back to Stash Menu", stash_menu)
         menu.add_option(2, "Stash All", functools.partial(prompt_stash_message, include_untracked=True))
         menu.add_option(3, "Stash Staged Only", functools.partial(prompt_stash_message, include_untracked=False))
         git_cmd.show_changes()
@@ -256,33 +277,20 @@ def confirm_existing_stash_operation(operation, stash):
     menu.add_option(2, "No", stash_menu)
     menu.show(post_action=stash_menu)
 
-def commits_menu():
-    menu = Menu("Select a Commit")
-    options = git_cmd.get_commits_hashes_only()
-    if not options:
-        app.print_warning("No commits available in this repo.")
-    else:
-        git_cmd.show_commits()
-        menu.add_option(1, "Back to Main Menu", main_menu)
-        i = 2
-        for opt in options:
-            menu.add_option(i, opt, functools.partial(reset_menu, opt))
-            i = i + 1
-        menu.show()
-
 def reset_menu(commit):
-    menu = Menu(f"Selected Commit <{commit}>")
-    menu.add_option(1, "Back to Commits Menu", commits_menu)
-    menu.add_option(2, "Mixed Reset", functools.partial(confirm_reset, "mixed", commit))
-    menu.add_option(3, "Soft Reset", functools.partial(confirm_reset, "soft", commit))
-    menu.add_option(4, "Hard Reset", functools.partial(confirm_reset, "hard", commit))
+    menu = Menu(f"Selected Commit: {commit}")
+    menu.add_option(1, "Back to Git Menu", git_menu)
+    menu.add_option(2, "Back to Commit Picker", commit_picker)
+    menu.add_option(3, "Mixed Reset", functools.partial(confirm_reset, "mixed", commit))
+    menu.add_option(4, "Soft Reset", functools.partial(confirm_reset, "soft", commit))
+    menu.add_option(5, "Hard Reset", functools.partial(confirm_reset, "hard", commit))
     menu.show()
 
 def confirm_reset(reset_type, commit):
-    menu = Menu(f"{reset_type.upper()} reset to commit <{commit}>?")
+    menu = Menu(f"{reset_type.upper()} reset to commit {commit} ?")
     menu.add_option(1, "Yes", functools.partial(reset, reset_type, commit))
-    menu.add_option(2, "No", commits_menu)
-    git_cmd.show_commits()
+    menu.add_option(2, "No", commit_picker)
+    # git_cmd.show_commits()
     menu.show(post_action=main_menu)
 
 def confirm_factory_reset():
@@ -292,7 +300,6 @@ def confirm_factory_reset():
     menu.add_option(2, "No", settings_menu)
     menu.show()
 
-
 def settings_menu():
     menu = Menu("Settings")
     menu.add_option(1, "Back to Main Menu", main_menu)
@@ -301,8 +308,9 @@ def settings_menu():
     menu.add_option(4, "Enable Daily Notes", functools.partial(set_daily_notes_status, "on"))
     menu.add_option(5, "Disable Daily Notes", functools.partial(set_daily_notes_status, "off"))
     menu.add_option(6, "Set Daily Notes Path", set_daily_notes_path)
-    menu.add_option(7, "Factory Reset", confirm_factory_reset)
-    # menu.add_option(7, "Set Commit Display Limit", set_commit_limit)
+    menu.add_option(7, "Enable Hidden Files (Browser)", functools.partial(set_hidden_files_status, "on"))
+    menu.add_option(8, "Disable Hidden Files (Browser)", functools.partial(set_hidden_files_status, "off"))
+    menu.add_option(9, "Factory Reset", confirm_factory_reset)
     config.read()
     config.show()
     menu.show(post_action=config.show)
@@ -312,6 +320,7 @@ def help_menu():
     menu.add_option(1, "Back to Main Menu", main_menu)
     menu.add_option(2, "View README", app.show_readme)
     menu.add_option(3, "View Config Example", config.show_config_template)
+    menu.add_option(4, "View App Dependencies", app.show_requirements)
     menu.show()
 
 def set_daily_notes_status(new_status):
@@ -335,11 +344,27 @@ def set_daily_notes_path():
         print()
         app.print_error(f"Canceled. Keep current path: '{config.get_daily_notes_root_path()}'")
 
+def set_hidden_files_status(new_status):
+    if (new_status == "on" or new_status == "off"):
+        try:
+            config.set_hidden_files(new_status)
+        except Exception as e:
+            app.print_error(f"Failed to set hidden files status: {e}")
+    else:
+        app.print_error(f"Unexpected status '{new_status}'. Status must be 'on' or 'off'.")
+
 
 def set_app(app_type):
     while True:
         new_app = input(f"Set new {app_type} app (or pass empty name to cancel): ")
         if not new_app:
+            if app_type == "browser":
+                app.print_question("Would you like to use the default integrated browser?")
+                if not app.prompt_continue():
+                    continue
+                else:
+                    config.set_app("browser", "default")
+                    break
             print()
             app.print_error(f"Canceled. Keep current {app_type} app: {config.get_app(app_type)}")
             break
@@ -356,7 +381,6 @@ def set_app(app_type):
 def reset(reset_type, commit):
     git_cmd.reset(reset_type, commit)
 
-# TODO create custom CLI browser, maybe a menu similar to the Log() screen
 def open_app(app_type, fpath=""):
     # if config isn't there, fallback to the system default app
     if not config.is_present():
@@ -368,6 +392,9 @@ def open_app(app_type, fpath=""):
         app.print_error(f"Unknown app type {app_type}. Valid app types are {valid_app_types}.")
         return
     app_name = config.get_app(app_type)
+    if app_type == "browser" and app_name == "default":
+        default_browser()
+        return
     try:
         if (which(app_name)) is None:
             raise FileNotFoundError
@@ -381,12 +408,13 @@ def open_app(app_type, fpath=""):
         open_system_app(app_type, fpath)
 
 def open_system_app(app_type, fpath=""):
+    """As of 0.8.6, this will open the simple integrated file browser instead of explorer.exe."""
     app_name = app.get_system_app(app_type)
     match app_type:
         case "editor":
             app_cmd.open_editor(app_name, fpath)
         case "browser":
-            app_cmd.open_browser(app_name)
+            default_browser()
         case _:
             app.print_error(f"App type '{app_type}' is not supported. Failed to retrieve default app for this type.")
 

@@ -5,15 +5,15 @@ from readchar import readkey, key
 # My modules
 from commands import GitCommand, AppCommand
 
-__version = "0.8.5-2"
+__version = "0.8.6"
 project_url = "https://github.com/tmscott88/GitWriting" 
 
 def convert_to_unix_path(fpath):
     """Replaces the current system's default path seperators with the standard Unix forward slash"""
     return fpath.strip().replace(os.sep, '/')
 
-def get_current_dir(convert=True):
-    """Returns the directory that this app is running. Converts to standard Unix path by default. On Windows, will return in Windows backslash format if set False."""
+def get_runtime_directory(convert=True):
+    """Returns the directory that this app is running in. Converts to standard Unix path by default. On Windows, will return in Windows backslash format if set False."""
     current = os.path.dirname(os.path.abspath(sys.argv[0]))
     if convert:
         return convert_to_unix_path(current)
@@ -23,12 +23,7 @@ def get_current_dir(convert=True):
 def get_system_app(app_type):
     match(app_type):
         case "browser":
-            if platform_is_windows():
-                return "explorer.exe"
-            elif platform_is_unix():
-                print_question(f"Unix system browser support coming soon.")
-            else:
-                print_warning(f"Platform not supported.")
+            return "default"
         case "editor":
             if platform_is_windows():
                 return "notepad.exe"
@@ -58,7 +53,7 @@ def is_valid_repo():
     cmd = GitCommand()
     try:
         git_root = cmd.get_repo_root()
-        script_dir = get_current_dir()
+        script_dir = get_runtime_directory()
         # print(f"\n(DEBUG) Git Root: {git_root}")
         # print(f"(DEBUG) Script Dir: {script_dir}")
         return bool(git_root == script_dir)
@@ -114,6 +109,7 @@ def print_system():
         print("Platform: Other")
     print(f"Python: {sys.version[:7]}")
 
+    
 def show_splash():
     print()
     print_version()
@@ -126,9 +122,13 @@ def show_about():
     print_system()
     prompt_continue(any_key=True)
 
+def show_requirements():
+    cmd = AppCommand()
+    cmd.view_content(resource_path("requirements.txt"))
+
 def show_readme():
     cmd = AppCommand()
-    cmd.view_file(resource_path("README.md"))
+    cmd.view_content(resource_path("README.md"))
 
 # symbols = {
 #     "error": "\u274C",

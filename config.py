@@ -54,11 +54,11 @@ class AppConfig(Config):
         """Generate a new config file if it doesn't exist already"""
         try:
             if app.platform_is_windows():
-                # TODO determine how to best handle windows defaults: Stay in CLI, open GUI apps?
-                self.parser['APPS'] = {'editor': 'notepad.exe', 'browser': 'explorer.exe'}
+                self.parser['APPS'] = {'editor': 'notepad.exe', 'browser': 'default'}
             elif app.platform_is_unix():
-                self.parser['APPS'] = {'editor': 'nano', 'browser': 'ls'}
+                self.parser['APPS'] = {'editor': 'nano', 'browser': 'default'}
             self.parser['DAILY_NOTES'] = {'status': 'off', 'path': 'daily'}
+            self.parser['FLAGS'] = {'hidden_files': 'off'}
             self.save(f"A new config file '{self.name}' was generated with these defaults, based on your system.")
         except Exception as e:
             app.print_error(f"Error while generating config file. {e}")
@@ -86,6 +86,10 @@ class AppConfig(Config):
         status = self.get_daily_notes_status()
         return bool(status == "on")
 
+    def is_hidden_files_enabled(self):
+        status = self.get_hidden_files_status()
+        return bool(status == "on")
+
     def get_app(self, app_type):
         return self.get_value('APPS', app_type)
 
@@ -95,6 +99,9 @@ class AppConfig(Config):
     def get_daily_notes_root_path(self):
         return self.get_value('DAILY_NOTES', 'path')
 
+    def get_hidden_files_status(self):
+        return self.get_value('FLAGS', 'hidden_files')
+
     def set_app(self, app_type, new_app):
         self.set_value('APPS', app_type, new_app)
 
@@ -103,6 +110,9 @@ class AppConfig(Config):
         
     def set_daily_notes_path(self, new_path):
         self.set_value('DAILY_NOTES', 'path', new_path)
+
+    def set_hidden_files(self, new_status):
+        self.set_value('FLAGS', 'hidden_files', new_status)
         
     def show_app_not_found_error(self, name):
         app.print_error(f"App '{name}' not found.")
@@ -125,6 +135,9 @@ class AppConfig(Config):
             [DAILY_NOTES]
             status = off
             path = daily
+
+            [FLAGS]
+            hidden_files = off
         """)
 
     def factory_reset(self):

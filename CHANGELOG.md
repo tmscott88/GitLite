@@ -1,21 +1,22 @@
 # CHANGELOG
 
-See below for what has been successfully ported from `start.sh` -> `gitlite.py`, and what reamins in development. I started at version 0.8.0 for this repo since I already migrated about 80% of the former script to the current script.
+## (WIP) 0.8.6
 
-## (TBD) 0.8.6
+- [x] Nest Git functions into a [Git] submenu (reduce clutter)
+- [?] Create a custom file browser (similar to the Log menu)
 
+  -[] Be clearer about where Windows-style paths are used (if used). Will the app convert every path to standard forward slashes?
 - [] Add further config file verification, section by section, key by key
 - [] Rework "Open Recent" menu to list files by different filters (modification date, uncommitted, etc). Provide different options.
-- [] Create a custom file browser (similar to the Log menu)
 - [] Add branches, rebasing, merging?
 - [] Add option/choice to automatically stage changes before stashing.
 
-## (WIP) 0.8.5
+## 0.8.5
 
 - [x] Major Refactoring: Split the main script into new modules
 - [x] Add interactive "Setup" menu - If config file doesn't exist, walk through creating a new file instead of throwing ambiguous errors.
 - [x] If an invalid app is specified during configuration, retry the input prompt
-- [?] Add "Help" menu with offline access to the README
+- [x] Add "Help" menu with offline access to the README
 - [] BUG: macOS build not reading directory properly.
 
 ## 0.8.4
@@ -56,44 +57,3 @@ New Features
 - Basic file editor integration
 - Basic file browser integration
 - Planning & Testing
-
-## Development
-
-### Git Functions
-
-- [x] Prohibit `stash`, `reset` if the script has pending changes
-- [x] Start
-  - [x] New
-  - [x] Resume
-  - [x] Browse
-  - [x] Daily Note
-  - [x] Cancel
-- [x] Fetch
-- [x] Log
-  - [x] Standard
-  - [x] Simple
-  - [x] Verbose
-- [x] Diff
-- [x] Pull
-- [x] Push
-- [x] Stage
-  - [x] Stage All
-  - [x] Unstage All
-  - [x] Interactive
-- [x] Commit
-  - [x] Message
-  - [x] No Message (cancel)
-- [] Stash
-  - [] Create
-  - [] Apply
-  - [] Pop
-  - [] Drop
-- [x] Revert
-- [x] Discard
-- [x] Reset
-  - [x] Mixed
-  - [x] Hard
-  - [x] Soft
-- [x] Quit
-
-Making some more changes here.
