@@ -15,11 +15,10 @@ class Menu:
                 print(f"{key}: {desc}")
             try:
                 choice = int(input("Select an option: "))
-                if choice not in self.options.keys():
+                if choice not in self.options:
                     raise ValueError()
-                else:
-                    self.options[choice][1]()
+                self.options[choice][1]()
             except (ValueError, IndexError):
                 print("\nInvalid input.")
-            if post_action != None:
+            if post_action is not None:
                 post_action()

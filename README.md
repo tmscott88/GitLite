@@ -77,16 +77,17 @@ Inspired by Obsidian, Daily Notes allow you to quickly create a diary within you
 - Install [PyInstaller](https://pyinstaller.org/en/stable/) using `pip`. See [here](https://pip.pypa.io/en/stable/installation/) if you do not already have `pip` installed with Python.
 - Based on your platfrm, run one of these command from the root directory of your Git repo to create a build.
 - Like most other Python projects, app dependencies are located in `requirements.txt`, or see `Help -> View App Dependencies` within the app.
+- (Optional, do at your own risk): Add `--noconfirm` to the end of the command chain to bypass the override warning.
 
 ### Windows & Linux (Recommended)
 
-`pyinstaller -F -n GitWriting --add-data "README.md;." --add-data "requirements.txt;." --recursive-copy-metadata readchar main.py`
+`pyinstaller -F -n GitWriting --add-data "gitwriting.ini;." --add-data "CHANGELOG.md;." --add-data "README.md;." --add-data "requirements.txt;." --recursive-copy-metadata readchar --recursive-copy-metadata pick main.py`
 
 ### macOS (NOT WORKING RIGHT NOW)
 
-`-w | --windowed | --noconsole` enables building an OSX `.app` bundle and Unix executable instead of a `console` document.
+`-w | --windowed | --noconsole` enables building an OSX `.app` bundle and Unix executable instead of a `console` document
 
-`pyinstaller -F -w -n GitWriting --add-data "README.md:." --add-data "requirements.txt:." --recursive-copy-metadata readchar main.py`
+`pyinstaller -F -w -n GitWriting --add-data "gitwriting.ini:." --add-data "CHANGELOG.md:." --add-data "README.md:." --add-data "requirements.txt:." --recursive-copy-metadata readchar --recursive-copy-metadata pick main.py`
 
 ## Default Configuration File
 
@@ -95,31 +96,29 @@ Inspired by Obsidian, Daily Notes allow you to quickly create a diary within you
 ### Unix
 
 ```ini
-[APPS]
-browser = default
+[PATHS]
 editor = nano
+browser = default
+daily_notes = daily
 
-[DAILY_NOTES]
-status = off
-path = daily
-
-[FLAGS] 
-hidden_files = off
+[FLAGS]
+daily_notes = off
+browser_hidden_files = off
+browser_readonly_mode = off
 ```
 
 ### Windows
 
 ```ini
-[APPS]
-browser = default
+[PATHS]
 editor = notepad.exe
+browser = default
+daily_notes = daily
 
-[DAILY_NOTES]
-status = off
-path = daily
-
-[FLAGS] 
-hidden_files = off
+[FLAGS]
+daily_notes = off
+browser_hidden_files = off
+browser_readonly_mode = off
 ```
 
 1. Create `gitwriting.ini` in the project's root directory

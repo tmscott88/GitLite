@@ -1,114 +1,100 @@
-# Python modules
+"""App utilities go here"""
 import os
 import sys
-from readchar import readkey, key
-# My modules
-from commands import GitCommand, AppCommand
+from readchar import readkey
 
-__version = "0.8.6"
-project_url = "https://github.com/tmscott88/GitWriting" 
+VERSION = "0.8.6"
+PROJECT_URL = "https://github.com/tmscott88/GitWriting" 
 
-def convert_to_unix_path(fpath):
-    """Replaces the current system's default path seperators with the standard Unix forward slash"""
-    return fpath.strip().replace(os.sep, '/')
+def get_expected_config_path():
+    """Returns the expected config path. By default, will point to the working directory"""
+    return os.path.join(os.getcwd(), "gitwriting.ini")
 
 def get_runtime_directory(convert=True):
-    """Returns the directory that this app is running in. Converts to standard Unix path by default. On Windows, will return in Windows backslash format if set False."""
-    current = os.path.dirname(os.path.abspath(sys.argv[0]))
+    """Returns the directory of the current script. Converts to standard path format by default. On Windows, will return in Windows path format if set False."""
+    runtime_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     if convert:
-        return convert_to_unix_path(current)
-    else:
-        return current
+        return runtime_dir.strip().replace(os.sep, '/')
+    return runtime_dir
+
+def change_working_directory(new_directory):
+    """Change the working directory using os.chdir()."""
+    try:
+        os.chdir(new_directory)
+    except OSError as e:
+        print_error(f"Could not change working directory to '{new_directory}'. {e}")
             
 def get_system_app(app_type):
+    """Based on the current platform, returns the default app for the provided app type"""
     match(app_type):
         case "browser":
             return "default"
         case "editor":
             if platform_is_windows():
                 return "notepad.exe"
-            elif platform_is_unix():
+            if platform_is_unix():
                 editor = os.getenv('EDITOR')
                 if not editor:
                     return "nano"
-                else:
-                    return editor
-            else:
-                print_warning(f"Platform not supported.")
+                return editor
+            print_warning("Platform not supported.")
         case _:
             print_error(f"App type '{app_type}' is not supported.")
 
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
+def get_resource_path(relative_path):
+    """Returns the absolute path to a resource (if the resource exists in the app data), works for dev and for PyInstaller. Resources must be added when building the app, e.g. with PyInstaller (--add-data ...)"""
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
-
-def is_valid_repo():
-    """Check if the app is placed at the top level of a git repo"""
-    cmd = GitCommand()
-    try:
-        git_root = cmd.get_repo_root()
-        script_dir = get_runtime_directory()
-        # print(f"\n(DEBUG) Git Root: {git_root}")
-        # print(f"(DEBUG) Script Dir: {script_dir}")
-        return bool(git_root == script_dir)
-    except Exception as e:   
-        return False
+        return os.path.join(sys._MEIPASS, relative_path)
+    except AttributeError:
+        print_error(f"Could not retrieve an app resource path for {relative_path}.")
+        print_warning(f"This feature is unavailable when running the app from source. Please build the app using PyInstaller or download the latest release from: {PROJECT_URL}.")
+        return None
 
 def platform_is_windows():
+    """Using os.name, returns True if 'nt'."""
     return os.name == "nt"
 
 def platform_is_unix():
+    """Using os.name, returns True if 'posix'."""
     return os.name == "posix"
 
-# def is_running_in_windows_terminal():
-#     """Returns True if "WT_SESSION" is found as an environment variable."""
-#     return platform_is_windows() and "WT_SESSION" in os.environ
-
 def prompt_exit():
+    """Prompts to exit the app."""
     print("\nPress any key to exit...")
-    k = readkey()
+    readkey()
     sys.exit()
 
 def prompt_continue(any_key=False):
     if any_key:
         print("\nPress any key to continue...")
         k = readkey()
-        return
-    else:
-        while True:
-            print("\nContinue? (Y/n): ")
-            k = readkey()
-            if k == "y" or k == "Y":
-                return True
-            elif k == "n" or k == "N":
-                return False
-            else:
-                print_error("Invalid option.")
-                continue
-
+        return None
+    while True:
+        print("\nContinue? (Y/n): ")
+        k = readkey()
+        if k in ('y', 'Y'):
+            return True
+        if k in ('n', 'N'):
+            return False
+        print_error("Invalid option.")
+        continue
 
 def print_version():
-    print(f"GitWriting {__version}")
+    print(f"GitWriting {VERSION}")
 
 def print_author():
     print("Author: Tom Scott (tmscott88)")
-    print(project_url)
+    print(PROJECT_URL)
 
 def print_system():
     if platform_is_windows():
         print("Platform: Windows")
-    elif platform_is_unix:
+    elif platform_is_unix():
         print("Platform: Unix")
     else:
         print("Platform: Other")
     print(f"Python: {sys.version[:7]}")
-
     
 def show_splash():
     print()
@@ -122,13 +108,9 @@ def show_about():
     print_system()
     prompt_continue(any_key=True)
 
-def show_requirements():
-    cmd = AppCommand()
-    cmd.view_content(resource_path("requirements.txt"))
-
-def show_readme():
-    cmd = AppCommand()
-    cmd.view_content(resource_path("README.md"))
+def show_app_not_found_error(name):
+    print_error(f"App '{name}104 not found.")
+    print_warning("Ensure that the app's name is defined correctly and installed systemwide.\n", new_line=False)
 
 # symbols = {
 #     "error": "\u274C",
@@ -153,8 +135,10 @@ def print_warning(message, new_line=True):
 
 def print_error(message, new_line=True):
     """Prints a message prepended with an optional newline and a red "cancel" circle."""
-    print(f"\u274C {message}")
-    pass
+    if new_line:
+        print(f"\n\u274C {message}")
+    else:
+        print(f"\u274C {message}")
 
 def print_info(message, new_line=True):
     """Prints a message prepended with a newline and an "info" mark."""

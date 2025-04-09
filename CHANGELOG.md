@@ -1,15 +1,22 @@
 # CHANGELOG
 
+## (TBD) 0.8.7
+
+- [] **Make the app portable.** Provide picker for selecting a work directory. If the directory is within a valid git repo, enable the `Source Control` menu. If not, just let the app be a simple file manager.
+- [] Add further config file verification. **Allow it to be placed anywhere within the repo**, so long as it can be found.
+- [] Add branches, rebasing, merging?
+- [] Rework "Open Recent" menu to list files by different filters (modification date, uncommitted, etc). Provide different options.
+- [] Add option/choice to automatically stage changes before stashing.
+- [] Create better settings "picker" for the flag options.
+
 ## (WIP) 0.8.6
 
 - [x] Nest Git functions into a [Git] submenu (reduce clutter)
-- [?] Create a custom file browser (similar to the Log menu)
+- [x] Create a custom file browser (similar to the Log menu), with read-only mode and hidden files toggle
+- [x] Add the config file as a PyInstller resource to the app's build data.
+- [x] If the working directory is not at the root of a Git repository, the `File` operations may still be used, but `Source Control` will be disabled.  
 
-  -[] Be clearer about where Windows-style paths are used (if used). Will the app convert every path to standard forward slashes?
-- [] Add further config file verification, section by section, key by key
-- [] Rework "Open Recent" menu to list files by different filters (modification date, uncommitted, etc). Provide different options.
-- [] Add branches, rebasing, merging?
-- [] Add option/choice to automatically stage changes before stashing.
+- [?] Be clearer about where Windows-style paths are used (if used). Will the app convert every path to standard forward slashes?
 
 ## 0.8.5
 
@@ -23,9 +30,9 @@
 
 - [x] Feature: Add stashing
 - [x] Add "About" option to main menu
-- [x] Improve Settings menu to mimic `config.ini` structure. See `README.md` for the new base config file.
+- [x] Improve Settings menu to mimic `app_cfg.ini` structure. See `README.md` for the new base config file.
 - [x] Remove unnecessary shell calls, change all subprocess calls to explicit parts
-- [x] CRITICAL: prevent GitLite from attempting to load external app when invalid app reference is set in `config.ini` (i.e. by manual intervention, a previous session) outside of the Settings Menu.
+- [x] CRITICAL: prevent GitLite from attempting to load external app when invalid app reference is set in `app_cfg.ini` (i.e. by manual intervention, a previous session) outside of the Settings Menu.
 - [x] Improve/clarify initial arguments
 - [x] "View Diff" menu; Show `git diff` by choice of file rather than for all tracked, uncommitted files at once.
 
