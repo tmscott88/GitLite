@@ -4,17 +4,21 @@ import sys
 from readchar import readkey
 
 VERSION = "0.8.6"
-PROJECT_URL = "https://github.com/tmscott88/GitWriting" 
+PROJECT_URL = "https://github.com/tmscott88/GitWriting"
+
+def get_standard_path(path):
+    """(Windows) Converts the specified path to a standardized path format with forward slashes insstead of backward slashes."""
+    return path.strip().replace(os.sep, '/')
 
 def get_expected_config_path():
     """Returns the expected config path. By default, will point to the working directory"""
     return os.path.join(os.getcwd(), "gitwriting.ini")
 
-def get_runtime_directory(convert=True):
-    """Returns the directory of the current script. Converts to standard path format by default. On Windows, will return in Windows path format if set False."""
+def get_runtime_directory(convert_to_standard=True):
+    """Returns the runtime directory of the current script. Not to be confused with the working directory, which can be changed using os.cwd()."""
     runtime_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    if convert:
-        return runtime_dir.strip().replace(os.sep, '/')
+    if convert_to_standard:
+        return get_standard_path(runtime_dir)
     return runtime_dir
 
 def change_working_directory(new_directory):
@@ -23,7 +27,7 @@ def change_working_directory(new_directory):
         os.chdir(new_directory)
     except OSError as e:
         print_error(f"Could not change working directory to '{new_directory}'. {e}")
-            
+
 def get_system_app(app_type):
     """Based on the current platform, returns the default app for the provided app type"""
     match(app_type):
@@ -42,12 +46,14 @@ def get_system_app(app_type):
             print_error(f"App type '{app_type}' is not supported.")
 
 def get_resource_path(relative_path):
-    """Returns the absolute path to a resource (if the resource exists in the app data), works for dev and for PyInstaller. Resources must be added when building the app, e.g. with PyInstaller (--add-data ...)"""
+    """Returns the absolute path to a resource (if the resource exists in the app data)
+        Works for dev and for PyInstaller.
+        Resources must be added when building the app, e.g. with PyInstaller (--add-data ...)"""
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         return os.path.join(sys._MEIPASS, relative_path)
     except AttributeError:
-        print_error(f"Could not retrieve an app resource path for {relative_path}.")
+        print_error(f"Could not find an app resource path for '{relative_path}'.")
         print_warning(f"This feature is unavailable when running the app from source. Please build the app using PyInstaller or download the latest release from: {PROJECT_URL}.")
         return None
 
@@ -66,6 +72,7 @@ def prompt_exit():
     sys.exit()
 
 def prompt_continue(any_key=False):
+    """Use this prompt to confirm whether to continue with a process or not."""
     if any_key:
         print("\nPress any key to continue...")
         k = readkey()
@@ -81,13 +88,16 @@ def prompt_continue(any_key=False):
         continue
 
 def print_version():
+    """Helper function to print the app version"""
     print(f"GitWriting {VERSION}")
 
 def print_author():
+    """Helper function to print the app author and project URL"""
     print("Author: Tom Scott (tmscott88)")
     print(PROJECT_URL)
 
 def print_system():
+    """Prints the current platform"""
     if platform_is_windows():
         print("Platform: Windows")
     elif platform_is_unix():
@@ -95,21 +105,19 @@ def print_system():
     else:
         print("Platform: Other")
     print(f"Python: {sys.version[:7]}")
-    
-def show_splash():
-    print()
-    print_version()
-    print_author()
 
-def show_about():
+def show_splash(verbose=False):
+    """Prints the app version and author. If verbose=True, prints the system information as well."""
     print()
     print_version()
     print_author()
-    print_system()
-    prompt_continue(any_key=True)
+    if verbose:
+        print_system()
+        prompt_continue(any_key=True)
 
 def show_app_not_found_error(name):
-    print_error(f"App '{name}104 not found.")
+    """Prints an error that the specified app was not found"""
+    print_error(f"App '{name}' not found.")
     print_warning("Ensure that the app's name is defined correctly and installed systemwide.\n", new_line=False)
 
 # symbols = {

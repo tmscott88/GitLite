@@ -1,3 +1,4 @@
+"""The entry point module for GitWriting"""
 # Python Modules
 import os
 import sys
@@ -10,15 +11,13 @@ import menus
 import prompts
 
 app_cfg = AppConfig(app.get_expected_config_path(), quiet=True)
-git_cmd = GitCommand(quiet=True)
+git_cmd = GitCommand()
 app_cmd = AppCommand()
-# __target_directory = app.os.getcwd()()
 
 def main():
     """Entry point method"""
     while len(sys.argv) > 1:
         handle_launch_args()
-    # TODO testing macOS package not finding proper directories
     app.show_splash()
     try:
         app_cfg.read()
@@ -27,7 +26,7 @@ def main():
 
     if not git_cmd.is_working_dir_at_git_repo_root():
         app.print_warning(f"The working directory '{os.getcwd()}' is not the root directory of a valid Git repository.")
-        app.print_warning("Source control is disabled. To re-enable source control, please exit and move the GitWriting executable and config file to the root directory of a valid Git repository.")    
+        app.print_warning("Source control is disabled. To re-enable source control, please exit and move the GitWriting executable and config file to the root directory of a valid Git repository.")
     else:
         # Set the working directory to the repo root
         app.change_working_directory(git_cmd.get_repo_root())
@@ -35,7 +34,11 @@ def main():
 
 def handle_launch_args():
     """Handle launch arguments when the app is launched"""
-    options_desc = "[Options] \nHelp: [-h | --help | -H] \nSetup/View Config: [-c | --config | -C] \nVersion: [-v | --version | -V], \nView README: [-r | --readme | -R]\nView App Dependencies: [-d | --dependencies | -D]"
+    options_desc = "[Options] \nHelp: [-h | --help | -H] \
+        \nSetup/View Config: [-c | --config | -C]  \
+        \nVersion: [-v | --version | -V],  \
+        \nView README: [-r | --readme | -R] \
+        \nView App Dependencies: [-d | --dependencies | -D]"
     usage_desc = f"\n[Usage] \n./{os.path.basename(__file__)} [OPTION]\n"
     parser_desc = f"\nSettings are defined in '{file_utils.get_path_tail(app_cfg.path)}'. See 'README.md' for a template config file."
 

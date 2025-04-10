@@ -1,8 +1,10 @@
+"""Contains various file management functions"""
 import os
 import app_utils as app
 
 def get_entries_in_directory(path, include_hidden=False):
-    """(Python 3.5+) Return an array of DirEntry object names corresponding to the entries in the given directory."""
+    """(Python 3.5+) Return a list of DirEntry object names, 
+        each corresponding to the entries in the specified directory."""
     results = []
     for entry in os.scandir(path):
         if not include_hidden:
@@ -13,7 +15,8 @@ def get_entries_in_directory(path, include_hidden=False):
     return results
 
 def get_folders_in_directory(path, include_hidden=False):
-    """Return an list of names corresponding to the (folder) entries in the given directory. (DIRECTORIES ONLY)"""
+    """Return an list of names corresponding to the (folder) entries in the specified directory. 
+        (DIRECTORIES ONLY)"""
     results = []
     for entry in os.scandir(path):
         if not include_hidden:
@@ -52,7 +55,6 @@ def create_new_directory(new_path):
     """Creates a new directory (and any intermediate directories denoted by the path seperator) if needed."""
     if not is_directory(new_path) and not is_file(new_path):
         try:
-            # TODO test path normalization
             os.makedirs(new_path, exist_ok=True)
             app.print_success(f"Created new directory '{new_path}'")
         # Shouldn't reach this since exist_ok=True but keep it just in case
@@ -63,7 +65,9 @@ def create_new_directory(new_path):
         raise FileExistsError
 
 def is_file(path):
+    """Returns whether the specified path exists and is a file"""
     return bool(os.path.isfile(path))
-    
+
 def is_directory(path):
+    """Returns whether the specified path exists is a directory"""
     return bool(os.path.isdir(path))

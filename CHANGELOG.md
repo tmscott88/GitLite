@@ -9,14 +9,12 @@
 - [] Add option/choice to automatically stage changes before stashing.
 - [] Create better settings "picker" for the flag options.
 
-## (WIP) 0.8.6
+## 0.8.6
 
 - [x] Nest Git functions into a [Git] submenu (reduce clutter)
 - [x] Create a custom file browser (similar to the Log menu), with read-only mode and hidden files toggle
 - [x] Add the config file as a PyInstller resource to the app's build data.
 - [x] If the working directory is not at the root of a Git repository, the `File` operations may still be used, but `Source Control` will be disabled.  
-
-- [?] Be clearer about where Windows-style paths are used (if used). Will the app convert every path to standard forward slashes?
 
 ## 0.8.5
 

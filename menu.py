@@ -1,10 +1,13 @@
+"""Contains a model for an interactive Menu object"""
 class Menu:
+    """The interactive, base Menu object"""
     def __init__(self, title):
         self.options = {}
         self.title = title
 
     def add_option(self, key, description, action):
-        self.options[key] = (description, action)  
+        """Adds an actionable option to the Menu object"""
+        self.options[key] = (description, action)
 
     def show(self, post_action=None):
         """Display the menu and handle user choice."""

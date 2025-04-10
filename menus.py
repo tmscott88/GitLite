@@ -1,3 +1,5 @@
+"""Contains the interactive menus"""
+
 import sys
 import functools
 from shutil import which
@@ -10,23 +12,23 @@ from menu import Menu
 import prompts
 from picker import Browser, CommitPicker
 
-app_cmd = AppCommand(quiet=True)
-git_cmd = GitCommand(quiet=True)
+app_cmd = AppCommand()
+git_cmd = GitCommand()
 app_cfg = AppConfig(app.get_expected_config_path())
 
 def main_menu():
-    """The main menu of GitWriting. Note: Source Control is disabled when the working directory is outside of a git repository.""" 
+    """The main menu of GitWriting"""
     menu = Menu("Main Menu")
     menu.add_option(1, "File", file_menu)
     menu.add_option(2, "Source Control", git_menu)
     menu.add_option(3, "Settings", settings_menu)
     menu.add_option(4, "Help", help_menu)
-    menu.add_option(5, "About GitWriting", app.show_about)
+    menu.add_option(5, "About GitWriting", functools.partial(app.show_splash, verbose=False))
     menu.add_option(6, "Quit", sys.exit)
     menu.show()
 
 def file_menu():
-    """The file management menu. "New File" uses the config's "editor" key, while "Open..." uses the config's "browser" key."""
+    """The file management menu. "New File" => config "editor", "Open..." => config "browser"""
     menu = Menu("File")
     menu.add_option(1, "Back to Main Menu", main_menu)
     menu.add_option(2, "New File", open_new_file)
@@ -41,7 +43,7 @@ def file_menu():
         menu.show(post_action=git_cmd.show_changes)
 
 def git_menu():
-    """The source control menu. Disabled when the working directory is not within a Git repository."""
+    """The source control menu. Disabled when the working directory is not within a Git repo."""
     if not git_cmd.is_working_dir_at_git_repo_root():
         app.print_warning("Source control is disabled.")
     else:
@@ -76,7 +78,7 @@ def recents_menu():
         app.print_warning("Recents menu is disabled.")
     else:
         menu = Menu("Open Recent")
-        options = git_cmd.get_changes_names_only()
+        options = git_cmd.get_changes(names_only=True)
         if not options:
             app.print_warning("No recent files to open.")
         else:
@@ -88,7 +90,7 @@ def recents_menu():
             menu.show()
 
 def diff_menu():
-    """Shows a list of tracked files from Git Index to view each individual diff."""
+    """Shows a list of tracked files to view each individual diff."""
     menu = Menu("View Diff")
     options = git_cmd.get_diff_options()
     if not options:
@@ -102,7 +104,7 @@ def diff_menu():
         menu.show()
 
 def stage_menu():
-    """Shows a list of tracked files from Git Index. Allows for quick or interactive stage/unstage."""
+    """Shows a list of tracked files. Allows for quick or interactive stage/unstage."""
     if not git_cmd.get_changes():
         app.print_warning("No changes to stage or unstage.")
     else:
@@ -115,7 +117,7 @@ def stage_menu():
         menu.show()
 
 def stash_menu():
-    """Shows a list of stash operations to continue with. Supported operations: Create, Apply, Pop, Drop"""
+    """Shows a list of stash operations: Create, Apply, Pop, Drop"""
     if not git_cmd.get_changes() and not git_cmd.get_stashes():
         app.print_warning("No changes or stashes available.")
         return
@@ -129,9 +131,12 @@ def stash_menu():
     menu.show()
 
 def select_stash_menu(operation):
-    """Shows a list of stashes in the local history. Proceeds with the stash operation (Create/Apply/Pop/Drop) selected from stash_menu()."""
+    """Shows a list of stashes in the local history. Proceeds with the stash operation."""
+    if operation in ("apply", "pop") and git_cmd.get_changes():
+        app.print_warning("Cannot safely apply a stash. Please commit, stash, or clean your changes first.")
+        return
     menu = Menu("Select a Stash")
-    options = git_cmd.get_stashes_names_only()
+    options = git_cmd.get_stashes(names_only=True)
     if not options:
         app.print_warning("No stashes available in this repo.")
         return
@@ -143,27 +148,31 @@ def select_stash_menu(operation):
     menu.show()
 
 def create_stash_menu():
+    """Stash all (including untracked changes), or stash staged changes only."""
     if not git_cmd.get_changes():
         app.print_warning("No changes available to stash.")
         return
     menu = Menu("Create Stash")
     menu.add_option(1, "Back to Stash Menu", stash_menu)
-    menu.add_option(2, "Stash All", functools.partial(prompts.prompt_stash_message, include_untracked=True))
-    menu.add_option(3, "Stash Staged Only", functools.partial(prompts.prompt_stash_message, include_untracked=False))
+    menu.add_option(2, "Stash All",
+        functools.partial(prompts.prompt_stash_message, include_untracked=True))
+    menu.add_option(3, "Stash Staged Only",
+        functools.partial(prompts.prompt_stash_message, include_untracked=False))
     git_cmd.show_changes()
-    menu.show(post_action=select_stash_menu)
+    menu.show(post_action=stash_menu)
 
 def confirm_existing_stash_operation(operation, stash):
+    """Shows options to apply, pop, or drop the selected stash."""
     if not git_cmd.get_stashes():
         app.print_warning("No stashes available in this repo.")
         return
     match(operation):
         case "apply":
-            app.print_warning("Note: This will apply the stored copy of the stash and preserve it in the local tree.")
+            app.print_warning(f"This will apply stash '{stash}' and preserve it in the worktree.")
         case "pop":
-            app.print_warning("Note: This will apply the stored copy of the selected stash and remove it from the local tree.")
+            app.print_warning(f"This will apply stash '{stash}' and remove it from the worktree.")
         case "drop":
-            app.print_warning("Note: This will permanently remove the stored copy of the selected stash.")
+            app.print_warning(f"This will permanently remove stash '{stash}' from the worktree.")
         case _:
             app.print_error(f"Stash operation {operation} is invalid.")
             return
@@ -173,6 +182,7 @@ def confirm_existing_stash_operation(operation, stash):
     menu.show(post_action=stash_menu)
 
 def reset_menu(commit):
+    """Shows options to soft, mixed, or hard reset to the selected commit."""
     menu = Menu(f"Selected Commit: {commit}")
     menu.add_option(1, "Back to Git Menu", git_menu)
     menu.add_option(2, "Back to Commit Picker", commit_picker)
@@ -182,37 +192,52 @@ def reset_menu(commit):
     menu.show()
 
 def confirm_reset(reset_type, commit):
+    """Shows Yes/No menu whether to reset to the selected commit."""
     menu = Menu(f"{reset_type.upper()} reset to commit {commit} ?")
     menu.add_option(1, "Yes", functools.partial(git_cmd.reset, reset_type, commit))
     menu.add_option(2, "No", functools.partial(reset_menu, commit))
     menu.show(post_action=git_menu)
 
 def confirm_factory_reset():
-    app.print_warning("Reset GitWriting back to default settings? THIS WILL ERASE THE EXISTING CONFIG FILE!")
+    """Shows Yes/No menu whether to remove the GitWriting config file."""
+    app.print_warning(f"Factory reset GitWriting? THIS WILL ERASE THE CONFIG FILE at {app_cfg.path}!")
     menu = Menu("Factory Reset")
     menu.add_option(1, "Yes", app_cfg.factory_reset)
     menu.add_option(2, "No", settings_menu)
     menu.show()
 
 def settings_menu():
+    """Shows the app settings menu, each of which modify the GitWriting config file."""
     menu = Menu("Settings")
-    menu.add_option(1, "Back to Main Menu", main_menu)
-    menu.add_option(2, "Set Browser", functools.partial(prompts.set_app, "browser"))
-    menu.add_option(3, "Set Editor", functools.partial(prompts.set_app, "editor"))
+    menu.add_option(1, "Back to Main Menu",
+        main_menu)
+    menu.add_option(2, "Set Browser",
+        functools.partial(prompts.set_app, "browser"))
+    menu.add_option(3, "Set Editor",
+        functools.partial(prompts.set_app, "editor"))
     # TODO convert the Flags settings to a settings picker?
-    menu.add_option(4, "Enable Daily Notes", functools.partial(set_daily_notes_status, "on"))
-    menu.add_option(5, "Disable Daily Notes", functools.partial(set_daily_notes_status, "off"))
-    menu.add_option(6, "Set Daily Notes Path", prompts.set_daily_notes_path)
-    menu.add_option(7, "Enable Hidden Files (Browser)", functools.partial(set_browser_hidden_files_status, "on"))
-    menu.add_option(8, "Disable Hidden Files (Browser)", functools.partial(set_browser_hidden_files_status, "off"))
-    menu.add_option(9, "Enable Read-Only Mode (Browser)", functools.partial(set_browser_readonly_mode_status, "on"))
-    menu.add_option(10, "Disable Read-Only Mode (Browser)", functools.partial(set_browser_readonly_mode_status, "off"))
-    menu.add_option(11, "\u26A0 Factory Reset \u26A0", confirm_factory_reset)
+    menu.add_option(4, "Enable Daily Notes",
+        functools.partial(set_daily_notes_status, "on"))
+    menu.add_option(5, "Disable Daily Notes",
+        functools.partial(set_daily_notes_status, "off"))
+    menu.add_option(6, "Set Daily Notes Path",
+        prompts.set_daily_notes_path)
+    menu.add_option(7, "Enable Hidden Files (Browser)",
+        functools.partial(set_browser_hidden_files_status, "on"))
+    menu.add_option(8, "Disable Hidden Files (Browser)",
+        functools.partial(set_browser_hidden_files_status, "off"))
+    menu.add_option(9, "Enable Read-Only Mode (Browser)",
+        functools.partial(set_browser_readonly_mode_status, "on"))
+    menu.add_option(10, "Disable Read-Only Mode (Browser)",
+        functools.partial(set_browser_readonly_mode_status, "off"))
+    menu.add_option(11, "\u26A0 Factory Reset \u26A0",
+        confirm_factory_reset)
     app_cfg.read()
     app_cfg.show()
     menu.show(post_action=app_cfg.show)
 
 def help_menu():
+    """Shows the app help menu."""
     menu = Menu("Help")
     menu.add_option(1, "Back to Main Menu", main_menu)
     menu.add_option(2, "View README", app_cmd.show_readme)
@@ -222,10 +247,12 @@ def help_menu():
     menu.show()
 
 def open_app(app_type, fpath=""):
-    # if config isn't there, fallback to the system default app
+    """Open an app with specified app type. 
+        If the GitWriting config isn't found, fallback to the system default app.
+        """
     if not app_cfg.is_in_current_dir():
-        open_system_app(app_type, fpath)
         app.print_warning("Config file not found. Opening default system app...")
+        open_system_app(app_type, fpath)
         return
     valid_app_types = ["browser", "editor"]
     if app_type not in valid_app_types:
@@ -248,7 +275,7 @@ def open_app(app_type, fpath=""):
         open_system_app(app_type, fpath)
 
 def open_system_app(app_type, fpath=""):
-    """As of 0.8.6, this will open the integrated file browser instead of explorer.exe."""
+    """Opens the default app for a specified app (if supported)."""
     app_name = app.get_system_app(app_type)
     match app_type:
         case "editor":
@@ -256,11 +283,12 @@ def open_system_app(app_type, fpath=""):
         case "browser":
             open_default_browser()
         case _:
-            app.print_error(f"App type '{app_type}' is not supported. Failed to retrieve default app for this type.")
+            app.print_error(f"App type '{app_type}' is not supported by GitWriting.")
 
 # def default_browser(select_folder_mode=False):
 def open_default_browser():
-    browser = Browser(app.get_runtime_directory(convert=False))
+    """As of 0.8.6, this will open the integrated file browser instead of explorer.exe."""
+    browser = Browser(app.get_runtime_directory(convert_to_standard=False))
     browser.show()
     # if select_folder_mode:
     #     browser.select_directory()
@@ -274,9 +302,9 @@ def open_default_browser():
     # else:
 
 def open_new_file():
+    """Prompt new file. If the file already exists, opens the file in the defined editor."""
     path = input("Enter new file name (or pass empty name to cancel): ")
     if not path:
-        print()
         app.print_error("Canceled operation.")
     else:
         if file_utils.is_file(path):
@@ -290,6 +318,7 @@ def open_new_file():
                 app.print_error(f"Failed to create or find file '{path}'")
 
 def open_daily_note():
+    """If Daily Notes features is enabled, creates and/or opens today's note at a generated path."""
     if not app_cfg.is_daily_notes_enabled():
         print("\nDaily Notes disabled. See Main Menu -> Settings to enable this feature.")
     else:
@@ -298,18 +327,21 @@ def open_daily_note():
         open_app("editor", fpath)
 
 def set_daily_notes_status(new_status):
+    """Helper function to enable or disable the Daily Notes feature."""
     if new_status in ("on","off"):
         app_cfg.set_daily_notes_status(new_status)
     else:
         app.print_error(f"Unexpected status '{new_status}'. Status must be 'on' or 'off'.")
 
 def set_browser_hidden_files_status(new_status):
+    """Helper function to enable or disable hidden files visibility in the default browser."""
     if new_status in ("on", "off"):
         app_cfg.set_browser_hidden_files(new_status)
     else:
         app.print_error(f"Unexpected status '{new_status}'. Status must be 'on' or 'off'.")
 
 def set_browser_readonly_mode_status(new_status):
+    """Helper function to enable or disable read-only mode in the default browser."""
     if new_status in ("on", "off"):
         app_cfg.set_browser_readonly_mode(new_status)
     else:

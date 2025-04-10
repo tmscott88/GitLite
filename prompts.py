@@ -1,3 +1,4 @@
+"""Contains various user-facing input prompts"""
 import sys
 from shutil import which
 
@@ -7,15 +8,16 @@ from config import AppConfig
 from commands import GitCommand
 
 app_cfg = AppConfig(app.get_expected_config_path())
-git_cmd = GitCommand(quiet=True)
+git_cmd = GitCommand()
 
 def prompt_create_config(is_full_launch=True):
+    """Prompt to handle the config creation, followed by an optional app launch"""
     # When running without the config launch argument
     if is_full_launch:
         print("\nWelcome to GitWriting!")
         print("\nLet's get you set up and writing!")
-        app.print_info("First, let's generate a configuration file_utils. This file contains some helpful app settings for GitWriting to use between sessions.")
-        app.print_info(f"The config file 'gitwriting.ini' will be generated at: {app.get_runtime_directory(convert=False)}")
+        app.print_info("First, let's generate a configuration file for GitWriting to use between sessions.")
+        app.print_info(f"The config file 'gitwriting.ini' will be generated at: {app.get_runtime_directory(convert_to_standard=False)}")
         if not app.prompt_continue():
             print("\nBye.")
             sys.exit()
@@ -49,6 +51,7 @@ def prompt_create_config(is_full_launch=True):
             sys.exit()
 
 def prompt_commit():
+    """Prompt for a message to create a new commit"""
     if not git_cmd.get_staged_changes():
         app.print_warning("No staged changes to commit.")
     else:
@@ -56,34 +59,36 @@ def prompt_commit():
         if message:
             git_cmd.commit_changes(message)
         else:
-            print()
             app.print_error("Canceled commit.")
 
 def prompt_stash_message(include_untracked=False):
-    message = input("Enter stash message (or pass empty message to cancel): ")
-    if message:
-        if include_untracked:
-            git_cmd.stash_all_changes(message)
-        else:
-            git_cmd.stash_staged_changes(message)
+    """Prompt for a message to create a new stash"""
+    if not include_untracked and not git_cmd.get_staged_changes():
+        app.print_warning("No staged changes to stash. Please stash all changes or stage changes first.")
     else:
-        print()
-        app.print_error("Canceled stash.")
+        message = input("Enter stash message (or pass empty message to cancel): ")
+        if message:
+            if include_untracked:
+                git_cmd.stash_all_changes(message)
+            else:
+                git_cmd.stash_staged_changes(message)
+        else:
+            app.print_error("Canceled stash.")
 
 def set_daily_notes_path():
+    """Prompts to set a new Daily Notes path in the config file"""
     new_path = input("Set new Daily Notes path (or pass empty path to cancel): ")
     if new_path:
         file_utils.create_new_directory(new_path)
         app_cfg.set_daily_notes_path(new_path)
     else:
-        print()
         app.print_error(f"Canceled. Keep current path: '{app_cfg.get_daily_notes_root_path()}'")
 
 def set_app(app_type):
+    """Prompts to set a new app in the config file"""
     while True:
         new_app = input(f"Set new {app_type} app: ")
         if not new_app:
-            print()
             app.print_error(f"Canceled. Keep current {app_type} app: {app_cfg.get_app(app_type)}")
             break
         if new_app == "default":
