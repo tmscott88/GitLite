@@ -1,6 +1,5 @@
 """Contains pickers created using the 'pick' module"""
 import os
-# import time
 from pick import pick, Option
 import file_utils
 import app_utils as app
@@ -60,6 +59,7 @@ class Picker():
 
     def show_paginated(self):
         """Initialize the picker"""
+        app.clear()
         options = []
         start_index = 0
         limit = 20
@@ -80,9 +80,6 @@ class Picker():
         if limit <= 0:
             options.append(Option("No further entries.", enabled=False))
         options.append(QUIT_OPTION)
-
-        # """Display and handle the picker interaction"""
-        app.clear()
         option, index = pick(options, indicator=INDICATOR, quit_keys=QUIT_KEYS)
         # print(f"Selected option {option} at index {index}, total options: {len(options)}")
         # print(f"Start index = {start_index}")
@@ -124,6 +121,7 @@ class Browser():
 
     def show(self):
         """Display the file browser, starting at start_path (Default=executable root)"""
+        app.clear()
         is_browser_hidden_files = self.app_cfg.is_browser_hidden_files_enabled()
         is_browser_readonly_mode = self.app_cfg.is_browser_readonly_mode_enabled()
         back_path = file_utils.get_path_head(self.current_path)
@@ -137,7 +135,6 @@ class Browser():
         options.append(Option(f"[View Hidden Files: {is_browser_hidden_files}]"))
         options.append(Option(f"[Read-Only Mode: {is_browser_readonly_mode}]"))
         options.append(QUIT_OPTION)
-        app.clear()
         option, index = pick(options, indicator=INDICATOR, quit_keys=QUIT_KEYS)
         # print(f"Selected option {option} at index {index}, total options: {len(options)}")
         # Quit

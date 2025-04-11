@@ -1,6 +1,7 @@
 """App utilities go here"""
 import os
 import sys
+import time
 from readchar import readkey
 
 VERSION = "0.8.6"
@@ -12,6 +13,7 @@ def clear():
         os.system('cls')
     elif platform_is_unix():
         os.system('clear')
+    time.sleep(0.1)
 
 def get_standard_path(path):
     """(Windows) Converts the specified path to a standardized path format with forward slashes insstead of backward slashes."""
