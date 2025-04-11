@@ -6,10 +6,11 @@ def get_all_files_by_modified_date(path, include_hidden=False):
     """Returns a cumulative list of files using os.walk()"""
     ignore = ['build', 'dist', '.git', '__pycache__']
     invalid_extensions=('.app','.dmg','.pkg','.exe','.DS_Store')
+    limit = 20
     paths_sorted = sorted([
         os.path.join(root, f)
         for root,_, files in os.walk(path)
-        for f in files],
+        for f in files][:limit],
         key=os.path.getctime, reverse=True)
     results = []
     if not include_hidden:
