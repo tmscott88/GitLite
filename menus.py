@@ -1,5 +1,6 @@
 """Contains the interactive menus"""
 
+import os
 import sys
 import functools
 from shutil import which
@@ -10,7 +11,7 @@ from config import AppConfig
 from commands import AppCommand, GitCommand
 from menu import Menu
 import prompts
-from picker import Browser, CommitPicker
+from pickers import Browser, Picker
 
 app_cmd = AppCommand()
 git_cmd = GitCommand()
@@ -33,7 +34,7 @@ def file_menu():
     menu.add_option(1, "Back to Main Menu", main_menu)
     menu.add_option(2, "New File", open_new_file)
     menu.add_option(3, "Open...", functools.partial(open_app, "browser"))
-    menu.add_option(4, "Open Recent", recents_menu)
+    menu.add_option(4, "Open Recent", recent_files_menu)
     if app_cfg.is_daily_notes_enabled():
         menu.add_option(5, "Open Daily Note", open_daily_note)
     if not git_cmd.is_working_dir_at_git_repo_root():
@@ -65,29 +66,36 @@ def git_menu():
 
 def commit_picker():
     """Opens a Curses picker menu to select one commit from the Git repo's history."""
-    picker = CommitPicker()
-    commit = picker.show()
+    picker = Picker(
+        title="[Commits]", 
+        populator=git_cmd.get_commits, 
+        total_entries=git_cmd.get_total_commits())
+    picker.show_paginated()
+    commit = picker.current_option
     if commit:
         reset_menu(commit[:7])
 
-def recents_menu():
-    """Shows a list of files from Git Index to open in the editor."""
-    # TODO: make switch flag in this menu set to "Last Modified" or "In Working Tree", reload menu based on toggle
-    #   Also create new config setting
-    if not git_cmd.is_working_dir_at_git_repo_root():
-        app.print_warning("Recents menu is disabled.")
-    else:
-        menu = Menu("Open Recent")
-        options = git_cmd.get_changes(names_only=True)
-        if not options:
-            app.print_warning("No recent files to open.")
-        else:
-            menu.add_option(1, "Back to File Menu", file_menu)
-            i = 2
-            for opt in options:
-                menu.add_option(i, opt, functools.partial(open_app, "editor", opt))
-                i = i + 1
-            menu.show()
+def recent_files_menu():
+    """Gives different options for how to view "recent" files."""
+    menu = Menu("Open Recent")
+    menu.add_option(1, "Back to File Menu", file_menu)
+    menu.add_option(2, "By Last Modified Date", functools.partial(recent_file_picker, title="[Open Recent]", recents_filter="modified"))
+    menu.add_option(3, "By Git Index", functools.partial(recent_file_picker, title="[Changes]", recents_filter="git_status"))
+    menu.show()
+
+def recent_file_picker(recents_filter="modified", title="[Picker]"):
+    """Opens a Curses picker menu to select a recently modified file."""
+    match(recents_filter):
+        case "git_status":
+            if not git_cmd.is_working_dir_at_git_repo_root():
+                app.print_warning("Cannot view recent files by git status.")
+            else:
+                picker = Picker(title=title, populator=functools.partial(git_cmd.get_changes, names_only=True))
+        case "modified":
+            picker = Picker(title=title, populator=functools.partial(file_utils.get_all_files_by_modified_date, os.getcwd(), include_hidden=False))
+        case _:
+            picker = Picker(title=title, populator=functools.partial(file_utils.get_all_files_by_modified_date, os.getcwd(), include_hidden=False))
+    picker.show()
 
 def diff_menu():
     """Shows a list of tracked files to view each individual diff."""
@@ -186,9 +194,10 @@ def reset_menu(commit):
     menu = Menu(f"Selected Commit: {commit}")
     menu.add_option(1, "Back to Git Menu", git_menu)
     menu.add_option(2, "Back to Commit Picker", commit_picker)
-    menu.add_option(3, "Mixed Reset", functools.partial(confirm_reset, "mixed", commit))
-    menu.add_option(4, "Soft Reset", functools.partial(confirm_reset, "soft", commit))
-    menu.add_option(5, "Hard Reset", functools.partial(confirm_reset, "hard", commit))
+    menu.add_option(3, "Review Commit", functools.partial(git_cmd.show_commit_details, commit))
+    menu.add_option(4, "Mixed Reset", functools.partial(confirm_reset, "mixed", commit))
+    menu.add_option(5, "Soft Reset", functools.partial(confirm_reset, "soft", commit))
+    menu.add_option(6, "Hard Reset", functools.partial(confirm_reset, "hard", commit))
     menu.show()
 
 def confirm_reset(reset_type, commit):
@@ -211,16 +220,16 @@ def settings_menu():
     menu = Menu("Settings")
     menu.add_option(1, "Back to Main Menu",
         main_menu)
-    menu.add_option(2, "Set Browser",
+    menu.add_option(2, "Browser",
         functools.partial(prompts.set_app, "browser"))
-    menu.add_option(3, "Set Editor",
+    menu.add_option(3, "Editor",
         functools.partial(prompts.set_app, "editor"))
     # TODO convert the Flags settings to a settings picker?
     menu.add_option(4, "Enable Daily Notes",
         functools.partial(set_daily_notes_status, "on"))
     menu.add_option(5, "Disable Daily Notes",
         functools.partial(set_daily_notes_status, "off"))
-    menu.add_option(6, "Set Daily Notes Path",
+    menu.add_option(6, "Daily Notes Path",
         prompts.set_daily_notes_path)
     menu.add_option(7, "Enable Hidden Files (Browser)",
         functools.partial(set_browser_hidden_files_status, "on"))
@@ -247,7 +256,7 @@ def help_menu():
     menu.show()
 
 def open_app(app_type, fpath=""):
-    """Open an app with specified app type. 
+    """Open an app with specified app type.
         If the GitWriting config isn't found, fallback to the system default app.
         """
     if not app_cfg.is_in_current_dir():
@@ -290,16 +299,6 @@ def open_default_browser():
     """As of 0.8.6, this will open the integrated file browser instead of explorer.exe."""
     browser = Browser(app.get_runtime_directory(convert_to_standard=False))
     browser.show()
-    # if select_folder_mode:
-    #     browser.select_directory()
-    #     path = browser.current_path
-    #     if path:
-    #         app.print_success(f"Selected directory '{path}'")
-    #         app.
-    # (path)
-    #     else:
-    #         app.print_error("Canceled directory selection.")
-    # else:
 
 def open_new_file():
     """Prompt new file. If the file already exists, opens the file in the defined editor."""

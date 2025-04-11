@@ -36,7 +36,6 @@ class Command:
 
 class GitCommand(Command):
     """Runs git commands"""
-
     def get_repo_root(self):
         """Returns the root of the Git repo"""
         return self.get_output("git rev-parse --show-toplevel")[0]
@@ -48,12 +47,16 @@ class GitCommand(Command):
             return [fname[3:] for fname in self.get_changes()]
         return changes
 
-    def get_commits(self, hashes_only=False):
+    def get_commits(self, hashes_only=False, index=0, limit=-1):
         """Returns the Git repo's commit history (full or hashes only)"""
-        commits = self.get_output("git log --oneline --all")
+        commits = self.get_output(f"git log --oneline HEAD~{index} -n {limit}")
         if commits and hashes_only:
             return [c[:7] for c in commits]
         return commits
+
+    def get_total_commits(self):
+        """Returns the total number of commits in the repo's history (not counting merges)"""
+        return self.get_output("git rev-list HEAD --count --no-merges")[0]
 
     def get_stashes(self, names_only=False):
         """Returns the Git repo's local stashes (full or names only)"""
@@ -146,11 +149,15 @@ class GitCommand(Command):
 
     def show_log(self):
         """Displays the commit history in a compact list"""
-        self.run("git log --oneline --all --decorate")
+        self.run("git log --oneline --decorate")
 
     def show_diff_for_file(self, file):
         """Shows the Git diff for the specified file"""
         self.run(f"git diff {file}")
+
+    def show_commit_details(self, commit_hash):
+        """Shows more details for the specified Git commit"""
+        self.run(f"git show {commit_hash}")
 
     def show_stashes_and_changes(self):
         """Shows local Git stashes and changes"""

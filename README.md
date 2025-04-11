@@ -81,13 +81,13 @@ Inspired by Obsidian, Daily Notes allow you to quickly create a diary within you
 
 ### Windows & Linux (Recommended)
 
-`pyinstaller -F -n GitWriting --add-data "gitwriting.ini;." --add-data "CHANGELOG.md;." --add-data "README.md;." --add-data "requirements.txt;." --recursive-copy-metadata readchar --recursive-copy-metadata pick main.py`
+`pyinstaller -F -n GitWriting --add-data="gitwriting.ini;." --add-data="CHANGELOG.md;." --add-data="README.md;." --add-data="requirements.txt;." --recursive-copy-metadata readchar --recursive-copy-metadata pick main.py`
 
 ### macOS (NOT WORKING RIGHT NOW)
 
 `-w | --windowed | --noconsole` enables building an OSX `.app` bundle and Unix executable instead of a `console` document
 
-`pyinstaller -F -w -n GitWriting --add-data "gitwriting.ini:." --add-data "CHANGELOG.md:." --add-data "README.md:." --add-data "requirements.txt:." --recursive-copy-metadata readchar --recursive-copy-metadata pick main.py`
+`pyinstaller -F -n GitWriting --add-data="gitwriting.ini:." --add-data="CHANGELOG.md:." --add-data="README.md:." --add-data="requirements.txt:." --recursive-copy-metadata readchar --recursive-copy-metadata pick main.py`
 
 ## Default Configuration File
 

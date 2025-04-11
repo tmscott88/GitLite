@@ -1,11 +1,13 @@
 # CHANGELOG
 
-## (TBD) 0.8.7
+## (WIP) 0.8.7
+
+- [?] Make certain pickers paginated to improve performance on repos with a long history; display the full details of the selected commit after selection
+- [?] Rework "Open Recent" menu to list files by different filters (modification date, uncommitted, etc). Provide different options.
 
 - [] **Make the app portable.** Provide picker for selecting a work directory. If the directory is within a valid git repo, enable the `Source Control` menu. If not, just let the app be a simple file manager.
 - [] Add further config file verification. **Allow it to be placed anywhere within the repo**, so long as it can be found.
 - [] Add branches, rebasing, merging?
-- [] Rework "Open Recent" menu to list files by different filters (modification date, uncommitted, etc). Provide different options.
 - [] Add option/choice to automatically stage changes before stashing.
 - [] Create better settings "picker" for the flag options.
 

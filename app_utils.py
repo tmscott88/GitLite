@@ -6,6 +6,13 @@ from readchar import readkey
 VERSION = "0.8.6"
 PROJECT_URL = "https://github.com/tmscott88/GitWriting"
 
+def clear():
+    """Clears the console. Recommended for ue when """
+    if platform_is_windows():
+        os.system('cls')
+    elif platform_is_unix():
+        os.system('clear')
+
 def get_standard_path(path):
     """(Windows) Converts the specified path to a standardized path format with forward slashes insstead of backward slashes."""
     return path.strip().replace(os.sep, '/')
