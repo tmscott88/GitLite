@@ -85,19 +85,6 @@ def __commit_picker():
     if commit:
         reset_menu(commit[:7])
 
-def __working_directory_picker():
-    """Opens a Curses picker menu to select the working directory folder."""
-    browser = Browser(os.getcwd())
-    browser.select_directory()
-    path = browser.current_path
-    if path:
-        print(f"Selected path {path}")
-        if not git_cmd.is_inside_git_repo():
-            app.print_error(f"Selected directory {path} is not a valid git repo.")
-        else:
-            app.change_working_directory(path)
-            app_cfg.set_default_working_directory(path)
-
 def recent_files_menu():
     """Gives different options for how to view "recent" files."""
     menu = Menu("Open Recent")
