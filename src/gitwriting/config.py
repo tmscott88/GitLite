@@ -80,7 +80,7 @@ class Config:
     def show(self):
         """Displays the config file, section by section"""
         try:
-            print(f"Config Path: {self._path}")
+            print(f"\nConfig Path: {self._path}")
             for section in self.parser.sections():
                 print()
                 print(f"[{section}]")
