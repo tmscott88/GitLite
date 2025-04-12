@@ -3,7 +3,7 @@ import os
 from pick import pick, Option
 import file_utils
 import app_utils as app
-from commands import AppCommand
+from commands import AppCommand, GitCommand
 from config import AppConfig
 
 INDICATOR = "->"
@@ -13,7 +13,7 @@ QUIT_OPTION = Option("\n--------------\n(esc|q - quit)", enabled=False)
 
 class Picker():
     """Pick one entry from a list of entries"""
-    app_cfg = AppConfig(app.get_expected_config_path(), quiet=True)
+    app_cfg = AppConfig(quiet=True)
     app_cmd = AppCommand()
     current_index = 0
     current_option = ""
@@ -33,13 +33,13 @@ class Picker():
         options.append(Option(f"[View Hidden Files: {is_browser_hidden_files}]"))
         options.append(Option(f"[Read-Only Mode: {is_browser_readonly_mode}]"))
         options.append(QUIT_OPTION)
-        app.clear()
+        app.clear(delay=0.1)
         # """Display and handle the picker interaction"""
         option, index = pick(options, indicator=INDICATOR, quit_keys=QUIT_KEYS)
         # print(f"Selected option {option} at index {index}, total options: {len(options)}")
         # Return the selected option
         if index in range (1, len(options) - 3):
-            self.on_select_file(option)
+            self.__on_select_file(option)
             return option
         # Toggle Hidden Files
         if index == len(options) - 3:
@@ -59,7 +59,7 @@ class Picker():
 
     def show_paginated(self):
         """Initialize the picker"""
-        app.clear()
+        app.clear(delay=0.1)
         options = []
         start_index = 0
         limit = 20
@@ -99,7 +99,7 @@ class Picker():
             self.current_option = option
             # print(f"Index {index} is in range ({start_index + 1}, {len(options) - 2})")
 
-    def on_select_file(self, fpath):
+    def __on_select_file(self, fpath):
         """Handle the file selection"""
         if file_utils.is_file(fpath):
             if self.app_cfg.is_browser_readonly_mode_enabled():
@@ -111,8 +111,9 @@ class Picker():
 class Browser():
     """Browse files and folders"""
     # esc, q => quit
-    app_cfg = AppConfig(app.get_expected_config_path(), quiet=True)
+    app_cfg = AppConfig(quiet=True)
     app_cmd = AppCommand()
+    git_cmd = GitCommand()
     current_path = ""
 
     def __init__(self, start_path):
@@ -121,15 +122,15 @@ class Browser():
 
     def show(self):
         """Display the file browser, starting at start_path (Default=executable root)"""
-        app.clear()
+        app.clear(delay=0.1)
         is_browser_hidden_files = self.app_cfg.is_browser_hidden_files_enabled()
         is_browser_readonly_mode = self.app_cfg.is_browser_readonly_mode_enabled()
         back_path = file_utils.get_path_head(self.current_path)
         options = file_utils.get_entries_in_directory(self.current_path,
             include_hidden=is_browser_hidden_files)
         start_index = 0
-        options.insert(start_index, Option(f"DIR: {self.start_path}", enabled=False))
-        if not self.is_at_root_directory(back_path):
+        options.insert(start_index, Option(f"DIR: {self.current_path}", enabled=False))
+        if not self.__is_at_root_directory(back_path):
             start_index = 1
             options.insert(start_index, "../")
         options.append(Option(f"[View Hidden Files: {is_browser_hidden_files}]"))
@@ -142,7 +143,7 @@ class Browser():
             return
         # Go Back
         if index == start_index:
-            if self.is_at_root_directory(back_path):
+            if self.__is_at_root_directory(back_path):
                 self.show()
             else:
                 self.current_path = back_path
@@ -164,13 +165,13 @@ class Browser():
         # File or Folder
         elif index in range (start_index + 1, len(options) - 3):
             next_path = os.path.join(self.current_path, option)
-            self.on_select_path(next_path, select_folder_only=False)
+            self.__on_select_path(next_path, select_folder_only=False)
 
-    def is_at_root_directory(self, pending_path):
+    def __is_at_root_directory(self, pending_path):
         """Is the pending directory at a higher level than the starting directory?"""
         return bool(len(pending_path) < len(self.start_path))
 
-    def on_select_path(self, next_path, select_folder_only=False):
+    def __on_select_path(self, next_path, select_folder_only=False):
         """Navigate up or down the directory tree (usually one level)"""
         if file_utils.is_file(next_path):
             if self.app_cfg.is_browser_readonly_mode_enabled():
@@ -184,3 +185,38 @@ class Browser():
                 self.select_directory()
             else:
                 self.show()
+
+    def select_directory(self):
+        """Display the file browser, starting at the specified path (Default=executable root). (DIRECTORIES ONLY)"""
+        back_path = file_utils.get_path_head(self.current_path)
+        options = file_utils.get_folders_in_directory(self.current_path, include_hidden=False)
+        if not options or not os.access(self.current_path, os.R_OK):
+            options = []
+            options.append(Option(f"DIR: {self.current_path}", enabled=False))
+            options.append("../")
+            options.append(Option("Read access denied. Please choose a different folder.", enabled=False))
+        else:
+            options.insert(0, Option(f"DIR: {self.current_path}", enabled=False))
+            options.insert(1, "../")
+            options.append(Option("[Confirm Folder & Quit]"))
+        options.append(QUIT_OPTION)
+        option, index = pick(options, indicator=INDICATOR, quit_keys=QUIT_KEYS)
+        # print(f"Selected option {self.current_path} at index {index}, total options: {len(options)}")
+        # Quit
+        if index == len(options) or index == -1:
+            return
+        # Go Back
+        if index == 1:
+            # What happens once we reach the system's root path?
+            if os.access(back_path, os.R_OK):
+                self.current_path = back_path
+                self.select_directory()
+        # Select Folder
+        elif index == len(options) - 2:
+            # print(f"Confirm {self.current_path} at index {index}")
+            return
+        # Next Folder
+        elif index in range (1, len(options) - 2):
+            next_path = os.path.join(self.current_path, option)
+            if os.access(next_path, os.R_OK):
+                self.__on_select_path(next_path, select_folder_only=True)

@@ -3,23 +3,24 @@
 import os
 import configparser
 from datetime import datetime
+import appdirs
 # My modules
 import app_utils as app
-import file_utils
 
 class Config:
     """The base config class"""
     parser = configparser.ConfigParser()
+    _path = ""
 
-    def __init__(self, path, quiet=False):
-        self.path = path
+    def __init__(self, quiet=False):
         self.quiet = quiet
 
     def read(self):
         """Tries to read the config file using configparser"""
         try:
-            with open(self.path, 'r', encoding="utf-8") as f:
+            with open(self._path, 'r', encoding="utf-8") as f:
                 self.parser.read_file(f)
+                print(f"Config: {self._path}")
         except FileNotFoundError:
             if not self.quiet:
                 app.print_warning(f"Could not find a valid config file in '{os.getcwd()}'.")
@@ -34,10 +35,10 @@ class Config:
         try:
             return self.parser.get(section, option)
         except ValueError:
-            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self.path}'. '{option}' is not a valid boolean.")
+            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self._path}'. '{option}' is not a valid boolean.")
         except configparser.Error as e:
-            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self.path}'. {e}")
-            app.print_info(f"Please verify that '{self.path}' is setup correctly.")
+            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self._path}'. {e}")
+            app.print_info(f"Please verify that '{self._path}' is setup correctly.")
         return None
 
     def get_bool(self, section, option):
@@ -45,10 +46,10 @@ class Config:
         try:
             return self.parser.getboolean(section, option)
         except ValueError:
-            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self.path}'. '{option}' is not a valid boolean.")
+            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self._path}'. '{option}' is not a valid boolean.")
         except configparser.Error as e:
-            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self.path}'. {e}")
-            app.print_info(f"Please verify that '{self.path}' is setup correctly.")
+            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self._path}'. {e}")
+            app.print_info(f"Please verify that '{self._path}' is setup correctly.")
         return None
 
     def set_value(self, section, option, value):
@@ -60,19 +61,22 @@ class Config:
             else:
                 self.save(f"Set ['{section}', '{option}'] = '{value}'")
         except (configparser.NoSectionError, TypeError) as e:
-            app.print_error(f"Failed to set ['{section}', '{option}'] = '{value}' in '{self.path}'. {e}")
+            app.print_error(f"Failed to set ['{section}', '{option}'] = '{value}' in '{self._path}'. {e}")
 
     def save(self, message=""):
         """Writes and saves a value to the config file using configparser"""
         try:
-            with open(self.path, "w", encoding="utf-8") as newfile:
+            # Only make new directory/directories if the file path forms a directory.
+            if os.path.dirname(self._path) != "":
+                os.makedirs(os.path.dirname(self._path), exist_ok=True)
+            with open(self._path, "w", encoding="utf-8") as newfile:
                 self.parser.write(newfile)
             if message != "":
                 app.print_success(message)
         except FileNotFoundError:
-            app.print_error(f"Could not find a valid config file '{newfile}'")
+            app.print_error("Could not find a valid config file.")
         except configparser.Error as e:
-            app.print_error(f"Failed to save to config file '{newfile}': {e}")
+            app.print_error(f"Failed to save the config file. {e}")
 
     def show(self):
         """Displays the config file, section by section"""
@@ -87,9 +91,11 @@ class Config:
 
 class AppConfig(Config):
     """Perform app-specific operations to the base config file"""
-    def __init__(self, path, quiet=False):
-        super().__init__(path, quiet=False)
-        self.path = path
+
+    _path = os.path.join(appdirs.user_config_dir(appname="GitWriting", appauthor=False), "gitwriting.ini")
+
+    def __init__(self, quiet=False):
+        super().__init__(quiet=False)
         self.quiet = quiet
 
     def generate(self):
@@ -97,34 +103,28 @@ class AppConfig(Config):
         try:
             if app.platform_is_windows():
                 self.parser['PATHS'] = {
-                    'editor': 'notepad.exe', 
-                    'browser': 'default', 
+                    'working_directory': os.getcwd(),
+                    'editor': 'notepad.exe',
+                    'browser': 'default',
                     'daily_notes': 'daily'}
             elif app.platform_is_unix():
                 self.parser['PATHS'] = {
-                    'editor': 'nano', 
-                    'browser': 'default', 
+                    'working_directory': os.getcwd(),
+                    'editor': 'nano',
+                    'browser': 'default',
                     'daily_notes': 'daily'}
             self.parser['FLAGS'] = {
-                'browser_hidden_files': 'off', 
-                'browser_readonly_mode': 'off', 
+                'browser_hidden_files': 'off',
+                'browser_readonly_mode': 'off',
                 'daily_notes': 'off'}
-            self.save(f"A new config file '{self.path}' was generated with these defaults.")
+            self.save(f"A new config file '{self._path}' was generated with these defaults.")
         except (FileNotFoundError, configparser.Error) as e:
-            app.print_error(f"Could not generate '{self.path}' config file. {e}")
+            app.print_error(f"Could not generate '{self._path}' config file. {e}")
             raise
 
-    def is_in_current_dir(self):
-        """Returns True if the config file is saved in the working directory"""
-        try:
-            self.read()
-            return bool(file_utils.get_path_head(self.path) == os.getcwd())
-        except FileNotFoundError:
-            return False
-
     def get_today_note_path(self):
-        """Returns a file path based on the current date, 
-            ordered by each year and month 
+        """Returns a file path based on the current date,
+            ordered by each year and month
             (Default: DAILY_NOTES_ROOT/YEAR/YEAR-MONTH/YEAR-MONTH-DAY.md)
         """
         root = self.get_daily_notes_root_path()
@@ -168,6 +168,10 @@ class AppConfig(Config):
         """Returns the default browser's readonly mode flag in the config file"""
         return self.get_bool('FLAGS', 'browser_readonly_mode')
 
+    def get_default_working_directory(self):
+        """Returns the default working directory in the config file"""
+        return self.get_value('PATHS', 'working_directory')
+
     def set_app(self, app_type, new_app):
         """Updates the specified app by app type in the config file"""
         self.set_value('PATHS', app_type, new_app)
@@ -188,12 +192,17 @@ class AppConfig(Config):
         """Sets the browser readonly mode flag in the config file"""
         self.set_value('FLAGS', 'browser_readonly_mode', new_status)
 
+    def set_default_working_directory(self, new_path):
+        """Sets the default working directory in the config file"""
+        self.set_value('PATHS', 'working_directory', new_path)
+
     def show_config_template(self):
         """View a working sample config file"""
         print(f"""
-            File: {self.path}
+            Config: {self._path}
 
             [PATHS]
+            working_directory = {os.getcwd()}
             editor = {app.get_system_app("editor")}
             browser = {app.get_system_app("browser")}
             daily_notes = daily
@@ -207,11 +216,11 @@ class AppConfig(Config):
     def factory_reset(self):
         """Deletes the existing config file, returning the app to its default state"""
         try:
-            if os.path.exists(self.path):
-                os.remove(self.path)
-                app.print_success(f"Deleted config file '{self.path}'")
+            if os.path.exists(self._path):
+                os.remove(self._path)
+                app.print_success(f"Deleted config file '{self._path}'")
             else:
-                app.print_info(f"{self.path} not found.")
+                app.print_info(f"{self._path} not found.")
             app.print_warning("GitWriting must be restarted in order to continue.")
             app.prompt_exit()
         except (OSError, FileNotFoundError) as e:

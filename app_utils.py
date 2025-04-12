@@ -7,28 +7,17 @@ from readchar import readkey
 VERSION = "0.8.6"
 PROJECT_URL = "https://github.com/tmscott88/GitWriting"
 
-def clear():
+def clear(delay=0):
     """Clears the console. Recommended for ue when """
     if platform_is_windows():
         os.system('cls')
     elif platform_is_unix():
         os.system('clear')
-    time.sleep(0.1)
+    time.sleep(delay)
 
 def get_standard_path(path):
     """(Windows) Converts the specified path to a standardized path format with forward slashes insstead of backward slashes."""
     return path.strip().replace(os.sep, '/')
-
-def get_expected_config_path():
-    """Returns the expected config path. By default, will point to the working directory"""
-    return os.path.join(os.getcwd(), "gitwriting.ini")
-
-def get_runtime_directory(convert_to_standard=True):
-    """Returns the runtime directory of the current script. Not to be confused with the working directory, which can be changed using os.cwd()."""
-    runtime_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    if convert_to_standard:
-        return get_standard_path(runtime_dir)
-    return runtime_dir
 
 def change_working_directory(new_directory):
     """Change the working directory using os.chdir()."""
@@ -36,6 +25,7 @@ def change_working_directory(new_directory):
         os.chdir(new_directory)
     except OSError as e:
         print_error(f"Could not change working directory to '{new_directory}'. {e}")
+        raise
 
 def get_system_app(app_type):
     """Based on the current platform, returns the default app for the provided app type"""
@@ -63,7 +53,8 @@ def get_resource_path(relative_path):
         return os.path.join(sys._MEIPASS, relative_path)
     except AttributeError:
         print_error(f"Could not find an app resource path for '{relative_path}'.")
-        print_warning(f"This feature is unavailable when running the app from source. Please build the app using PyInstaller or download the latest release from: {PROJECT_URL}.")
+        print_warning("This feature is unavailable when running the app from source.")
+        print_warning(f"Please build the app using PyInstaller (See README) or download the latest release from: {PROJECT_URL}.")
         return None
 
 def platform_is_windows():
@@ -122,7 +113,6 @@ def show_splash(verbose=False):
     print_author()
     if verbose:
         print_system()
-        prompt_continue(any_key=True)
 
 def show_app_not_found_error(name):
     """Prints an error that the specified app was not found"""

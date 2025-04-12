@@ -1,5 +1,4 @@
 """Contains subprocess functions and classes to hold Git & App-specific commands"""
-import os
 import subprocess
 import app_utils as app
 
@@ -164,15 +163,20 @@ class GitCommand(Command):
         self.show_stashes()
         self.show_changes()
 
-    def is_working_dir_at_git_repo_root(self):
-        """Check if the working directory at the top level of a git repo"""
+    def is_inside_git_repo(self):
+        """If the working directory is inside a git repo, changes working directory to root of the git repo"""
         try:
-            return bool(self.get_repo_root() == app.get_standard_path(os.getcwd()))
+            path = self.get_repo_root()
+            if "fatal" in path:
+                raise subprocess.CalledProcessError
+            return True
         except subprocess.CalledProcessError:
             return False
 
+
 class AppCommand(Command):
     """Command class for app-specific commands"""
+    git_cmd = GitCommand()
     def open_browser(self, browser):
         """Opens the specified browser"""
         self.run(browser)

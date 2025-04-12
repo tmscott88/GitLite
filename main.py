@@ -6,33 +6,34 @@ import sys
 from config import AppConfig
 from commands import GitCommand, AppCommand
 import app_utils as app
-import file_utils
 import menus
 import prompts
 
-app_cfg = AppConfig(app.get_expected_config_path(), quiet=True)
+app_cfg = AppConfig(quiet=True)
 git_cmd = GitCommand()
 app_cmd = AppCommand()
 
 def main():
     """Entry point method"""
+    # Launch arguments
     while len(sys.argv) > 1:
-        handle_launch_args()
+        __handle_launch_args()
     app.show_splash()
+    # Check for a config file
     try:
         app_cfg.read()
+        # Use the working directory from the config file
+        working_dir = app_cfg.get_default_working_directory()
+        app.change_working_directory(working_dir)
     except FileNotFoundError:
         prompts.prompt_create_config()
-
-    if not git_cmd.is_working_dir_at_git_repo_root():
-        app.print_warning(f"The working directory '{os.getcwd()}' is not the root directory of a valid Git repository.")
-        app.print_warning("Source control is disabled. To re-enable source control, please exit and move the GitWriting executable and config file to the root directory of a valid Git repository.")
-    else:
-        # Set the working directory to the repo root
-        app.change_working_directory(git_cmd.get_repo_root())
+    # Check is we're in a Git repo
+    if not git_cmd.is_inside_git_repo():
+        prompts.prompt_select_repo()
     menus.main_menu()
 
-def handle_launch_args():
+
+def __handle_launch_args():
     """Handle launch arguments when the app is launched"""
     options_desc = "[Options] \nHelp: [-h | --help | -H] \
         \nSetup/View Config: [-c | --config | -C]  \
@@ -40,13 +41,11 @@ def handle_launch_args():
         \nView README: [-r | --readme | -R] \
         \nView App Dependencies: [-d | --dependencies | -D]"
     usage_desc = f"\n[Usage] \n./{os.path.basename(__file__)} [OPTION]\n"
-    parser_desc = f"\nSettings are defined in '{file_utils.get_path_tail(app_cfg.path)}'. See 'README.md' for a template config file."
 
     option = sys.argv[1]
     if option in ("-h", "--help", "-H"):
         print(usage_desc)
         print(options_desc)
-        print(parser_desc)
     elif option in ("-c", "--config", "-C"):
         try:
             app_cfg.read()

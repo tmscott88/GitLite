@@ -21,8 +21,6 @@ GitWriting supports most modern Linux distributions, macOS, and Windows 11/10/7.
 - Run: `GitWriting.exe | GitWriting [-OPTION]`
 - Options: `[-h | --help | -H]` `[-o | --options | -O]` `[-v | --version | -V]`
 
-Note: A `gitwriting.ini` configuration file must be created and placed in the repo's root directory (alongside the **GitWriting** executable) in order to save and read app settings. certain features will be limited or blocked. See below for a working template.
-
 **GitWriting** is intended to work across terminals on Windows, macOS, and Linux.
 
 *However, MacOS native builds are not working on my ancient MacBook Air, so Linux and Windows are the best platforms to use right now.*
@@ -33,17 +31,11 @@ Note: A `gitwriting.ini` configuration file must be created and placed in the re
 
 ### Interactive Setup
 
-Upon launching GitWriting for the first time (or if you move the executable and forget to bring the config file over), you will see a few prompts. They ask which apps you would like to use.
-
-For now, they just ask for your browser and editor of choice. As I develop more features, I plan to add more helpful interactions to the app.
-
-First priority is ensuring everything works between Unix and Windows.
-
-Second priority is learning and setting up `pyproject.toml` to streamline the distribution process.
+Upon launching GitWriting for the first time (or if you move the executable and forget to bring the config file over), you will see a few prompts to configure settings for the first time. To delete the config file, Choose `Settings -> Factory Reset`, and the app will return to default state.
 
 ### Start Menu
 
-- New/Open File -> Simply open the editor defined in `gitwriting.ini` by passing a file name
+- New/Open File -> Simply open the editor by passing a file name
 - Resume Work -> Choose from uncommited files. *In a future release, I plan to add an option to populate this list by different filters.*
 - Browse Files -> **Please install a command-line file browser to take advantage of this feature!** *Though in a future release, I want to make an interactive browser that doesn't rely on Windows Explorer or a third party Unix browser.*
 - Open Daily Note (more info below)
@@ -81,22 +73,23 @@ Inspired by Obsidian, Daily Notes allow you to quickly create a diary within you
 
 ### Windows & Linux (Recommended)
 
-`pyinstaller -F -n GitWriting --add-data="gitwriting.ini;." --add-data="CHANGELOG.md;." --add-data="README.md;." --add-data="requirements.txt;." --recursive-copy-metadata readchar --recursive-copy-metadata pick main.py`
+`pyinstaller -F -n GitWriting --add-data="CHANGELOG.md;." --add-data="README.md;." --add-data="requirements.txt;." --recursive-copy-metadata appdirs --recursive-copy-metadata readchar --recursive-copy-metadata pick main.py`
 
 ### macOS (NOT WORKING RIGHT NOW)
 
 `-w | --windowed | --noconsole` enables building an OSX `.app` bundle and Unix executable instead of a `console` document
 
-`pyinstaller -F -n GitWriting --add-data="gitwriting.ini:." --add-data="CHANGELOG.md:." --add-data="README.md:." --add-data="requirements.txt:." --recursive-copy-metadata readchar --recursive-copy-metadata pick main.py`
+`pyinstaller -F -n GitWriting --add-data="CHANGELOG.md:." --add-data="README.md:." --add-data="requirements.txt:." --recursive-copy-metadata appdirs --recursive-copy-metadata readchar --recursive-copy-metadata pick main.py`
 
 ## Default Configuration File
 
-*Note: This config is automatically generated if requested after launch. But here is a working file for reference.
+*Note: This config is automatically generated if requested after launch. But here are sample files by platform for your reference.
 
 ### Unix
 
 ```ini
 [PATHS]
+working_directory = 
 editor = nano
 browser = default
 daily_notes = daily
@@ -111,6 +104,7 @@ browser_readonly_mode = off
 
 ```ini
 [PATHS]
+working_directory = 
 editor = notepad.exe
 browser = default
 daily_notes = daily
@@ -120,7 +114,3 @@ daily_notes = off
 browser_hidden_files = off
 browser_readonly_mode = off
 ```
-
-1. Create `gitwriting.ini` in the project's root directory
-2. Copy the attributes above to `gitwriting.ini`.
-3. Each setting can be changed through the *Main Menu -> Settings* interface.

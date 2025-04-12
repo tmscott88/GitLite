@@ -41,13 +41,18 @@ def get_folders_in_directory(path, include_hidden=False):
     """Return an list of names corresponding to the folder entries in the specified directory.
         (DIRECTORIES ONLY)"""
     results = []
-    for entry in os.scandir(path):
-        if not include_hidden:
-            if not entry.name.startswith('.') and entry.is_dir():
-                results.append(entry.name)
-        else:
-            if entry.is_dir():
-                results.append(entry.name)
+    try:
+        if not os.access(path, os.R_OK):
+            raise PermissionError
+        for entry in os.scandir(path):
+            if not include_hidden:
+                if not entry.name.startswith('.') and entry.is_dir():
+                    results.append(entry.name)
+            else:
+                if entry.is_dir():
+                    results.append(entry.name)
+    except PermissionError:
+        return None
     return results
 
 def get_path_head(path):

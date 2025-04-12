@@ -1,4 +1,5 @@
 """Contains various user-facing input prompts"""
+import os
 import sys
 from shutil import which
 
@@ -6,8 +7,9 @@ import app_utils as app
 import file_utils
 from config import AppConfig
 from commands import GitCommand
+from pickers import Browser
 
-app_cfg = AppConfig(app.get_expected_config_path())
+app_cfg = AppConfig()
 git_cmd = GitCommand()
 
 def prompt_create_config(is_full_launch=True):
@@ -17,7 +19,6 @@ def prompt_create_config(is_full_launch=True):
         print("\nWelcome to GitWriting!")
         print("\nLet's get you set up and writing!")
         app.print_info("First, let's generate a configuration file for GitWriting to use between sessions.")
-        app.print_info(f"The config file 'gitwriting.ini' will be generated at: {app.get_runtime_directory(convert_to_standard=False)}")
         if not app.prompt_continue():
             print("\nBye.")
             sys.exit()
@@ -49,6 +50,28 @@ def prompt_create_config(is_full_launch=True):
         if not app.prompt_continue():
             print("\nBye.")
             sys.exit()
+
+def prompt_select_repo():
+    """Prompt to select a repo using a directory picker"""
+    if not git_cmd.is_inside_git_repo():
+        app.print_error(f"The working directory '{os.getcwd()}' is not part of a Git repository.")
+    app.print_question("Change working directory? ")
+    if not app.prompt_continue():
+        app.print_error("Canceled directory change.")
+        return
+    try:
+        browser = Browser(os.getcwd())
+        browser.select_directory()
+        new_path = browser.current_path
+        app.change_working_directory(new_path)
+        if git_cmd.is_inside_git_repo():
+            root = git_cmd.get_repo_root()
+            app_cfg.set_default_working_directory(root if root else new_path)
+            app.print_success(f"Changed working directory: '{root if root else new_path}'")
+            return
+        prompt_select_repo()
+    except OSError as e:
+        app.print_error(f"Error while selecting new directory: {e}")
 
 def prompt_commit():
     """Prompt for a message to create a new commit"""
@@ -87,12 +110,13 @@ def set_daily_notes_path():
 def set_app(app_type):
     """Prompts to set a new app in the config file"""
     while True:
-        new_app = input(f"Set new {app_type} app: ")
+        new_app = input(f"Set new {app_type} app ('default' = default app): ")
         if not new_app:
             app.print_error(f"Canceled. Keep current {app_type} app: {app_cfg.get_app(app_type)}")
             break
+        # if "default", just fetch and set the system app
         if new_app == "default":
-            app_cfg.set_app(app_type, new_app)
+            app_cfg.set_app(app_type, app.get_system_app(app_type))
             break
         try:
             if (which(new_app)) is None:
