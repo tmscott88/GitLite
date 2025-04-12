@@ -1,4 +1,7 @@
 """Contains a model for an interactive Menu object"""
+from readchar import readkey
+import app_utils as app
+
 class Menu:
     """The interactive, base Menu object"""
     def __init__(self, title):
@@ -17,11 +20,16 @@ class Menu:
             for key, (desc, _) in options:
                 print(f"{key}: {desc}")
             try:
-                choice = int(input("Select an option: "))
-                if choice not in self.options:
-                    raise ValueError()
-                self.options[choice][1]()
+                while True:
+                    print("Select an option: ")
+                    k = int(readkey())
+                    print(f"Selected: {k}")
+                    if k not in self.options:
+                        raise ValueError
+                    self.options[k][1]()
+                    break
             except (ValueError, IndexError):
+                app.clear()
                 print("\nInvalid input.")
             if post_action is not None:
                 post_action()
