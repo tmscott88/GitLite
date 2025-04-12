@@ -18,8 +18,9 @@ class Command:
                 subprocess.run(command, text=True, check=True, shell=is_shell)
             else:
                 subprocess.run(command.split(), text=True, check=True, shell=is_shell)
-        except subprocess.CalledProcessError:
-            app.print_error(f"Failed to run command '{command}'")
+        except subprocess.CalledProcessError as e:
+            if not self.quiet:
+                app.print_error(f"Failed to run command '{command}: {e}'")
 
     def get_output(self, command):
         """Verify and return the array output of a command."""
@@ -28,9 +29,9 @@ class Command:
                 command.split(),
                 text=True,
                 stderr=subprocess.DEVNULL).splitlines()
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as e:
             if not self.quiet:
-                app.print_error(f"Failed to get output from command '{command}'")
+                app.print_error(f"Failed to get output from command '{command}: {e}'")
             raise
 
 class GitCommand(Command):
@@ -148,7 +149,7 @@ class GitCommand(Command):
 
     def show_log(self):
         """Displays the commit history in a compact list"""
-        self.run("git log --oneline --decorate")
+        self.run("git log --oneline --graph --name-status")
 
     def show_diff_for_file(self, file):
         """Shows the Git diff for the specified file"""

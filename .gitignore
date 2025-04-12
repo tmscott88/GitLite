@@ -13,6 +13,3 @@
 
 # Other
 **/.DS_Store
-
-# Ignore build binaries
-**GitWriting*

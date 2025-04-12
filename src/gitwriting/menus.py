@@ -215,6 +215,7 @@ def __confirm_existing_stash_operation(operation, stash):
 
 def reset_menu(commit):
     """Shows options to soft, mixed, or hard reset to the selected commit."""
+    git_cmd.show_commit_details(commit)
     menu = Menu(f"Selected Commit: {commit}")
     menu.add_option(1, "Back to Git Menu", git_menu)
     menu.add_option(2, "Back to Commit Picker", __commit_picker)

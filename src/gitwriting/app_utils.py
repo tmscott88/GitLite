@@ -4,6 +4,8 @@ import sys
 import time
 from readchar import readkey
 
+NAME = "GitWriting"
+CONFIG_NAME = "gitwriting.ini"
 VERSION = "0.8.7"
 PROJECT_URL = "https://github.com/tmscott88/GitWriting"
 
@@ -89,7 +91,7 @@ def prompt_continue(any_key=False):
 
 def print_version():
     """Helper function to print the app version"""
-    print(f"GitWriting {VERSION}")
+    print(f"{NAME} {VERSION}")
 
 def print_author():
     """Helper function to print the app author and project URL"""

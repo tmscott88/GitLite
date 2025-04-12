@@ -126,15 +126,21 @@ class Browser():
         is_browser_hidden_files = self.app_cfg.is_browser_hidden_files_enabled()
         is_browser_readonly_mode = self.app_cfg.is_browser_readonly_mode_enabled()
         back_path = file_utils.get_path_head(self.current_path)
+        start_index = 0
         options = file_utils.get_entries_in_directory(self.current_path,
             include_hidden=is_browser_hidden_files)
-        start_index = 0
-        options.insert(start_index, Option(f"DIR: {self.current_path}", enabled=False))
-        if not self.__is_at_root_directory(back_path):
-            start_index = 1
-            options.insert(start_index, "../")
-        options.append(Option(f"[View Hidden Files: {is_browser_hidden_files}]"))
-        options.append(Option(f"[Read-Only Mode: {is_browser_readonly_mode}]"))
+        if not options or not os.access(self.current_path, os.R_OK):
+            options = []
+            options.append(Option(f"DIR: {self.current_path}", enabled=False))
+            options.append("../")
+            options.append(Option("Read access denied. Please choose a different folder.", enabled=False))
+        else:
+            options.insert(start_index, Option(f"DIR: {self.current_path}", enabled=False))
+            if not self.__is_at_root_directory(back_path):
+                start_index = 1
+                options.insert(start_index, "../")
+            options.append(Option(f"[View Hidden Files: {is_browser_hidden_files}]"))
+            options.append(Option(f"[Read-Only Mode: {is_browser_readonly_mode}]"))
         options.append(QUIT_OPTION)
         option, index = pick(options, indicator=INDICATOR, quit_keys=QUIT_KEYS)
         # print(f"Selected option {option} at index {index}, total options: {len(options)}")

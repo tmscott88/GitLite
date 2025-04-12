@@ -5,7 +5,7 @@ import app_utils as app
 def get_all_files_by_modified_date(path, include_hidden=False):
     """Returns a cumulative list of files using os.walk()"""
     ignore = ['build', 'dist', '.git', '__pycache__']
-    invalid_extensions=('.app','.dmg','.pkg','.exe','.DS_Store')
+    invalid_extensions=('.app','.dmg','.pkg','.exe','.msi')
     limit = 20
     paths_sorted = sorted([
         os.path.join(root, f)
@@ -29,12 +29,17 @@ def get_entries_in_directory(path, include_hidden=False):
     """(Python 3.5+) Return a list of DirEntry object names,
         each corresponding to the entries in the specified directory."""
     results = []
-    for entry in os.scandir(path):
-        if not include_hidden:
-            if not entry.name.startswith('.'):
+    try:
+        if not os.access(path, os.R_OK):
+            raise PermissionError
+        for entry in os.scandir(path):
+            if not include_hidden:
+                if not entry.name.startswith('.'):
+                    results.append(entry.name)
+            else:
                 results.append(entry.name)
-        else:
-            results.append(entry.name)
+    except PermissionError:
+        return None
     return results
 
 def get_folders_in_directory(path, include_hidden=False):

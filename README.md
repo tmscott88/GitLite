@@ -12,18 +12,15 @@ GitWriting supports most modern Linux distributions, macOS, and Windows 11/10/7.
 
 - Git (configured and authenticated)
 - A valid Git repository
-- *Python 3 (only needed for development or building from source)*
+- *Python 3.5+ (latest is recommended, only needed for manual builds or development), pyinstaller*
 
 ## Usage
 
-- Download and place the **GitWriting** executable for your platform `GitWriting-X-X-X.exe` for Windows, `GitWriting-X-X-X` for Unix in the root directory of your local Git repository.
-- Add a new pattern to your repository's `.gitignore` if you don't want the app tracking, i.e. `*GitWriting*`
-- Run: `GitWriting.exe | GitWriting [-OPTION]`
+- Download the **GitWriting** executable for your platform `GitWriting.exe` for Windows, `GitWriting`. I would recommend placing it inside your system's apps folder or a similar directory.
+- Run: `GitWriting.exe | ./GitWriting [-OPTION]`
 - Options: `[-h | --help | -H]` `[-o | --options | -O]` `[-v | --version | -V]`
 
-**GitWriting** is intended to work across terminals on Windows, macOS, and Linux.
-
-*However, MacOS native builds are not working on my ancient MacBook Air, so Linux and Windows are the best platforms to use right now.*
+**GitWriting** works on Windows and Unix.
 
 ## Features
 
@@ -31,7 +28,7 @@ GitWriting supports most modern Linux distributions, macOS, and Windows 11/10/7.
 
 ### Interactive Setup
 
-Upon launching GitWriting for the first time (or if you move the executable and forget to bring the config file over), you will see a few prompts to configure settings for the first time. To delete the config file, Choose `Settings -> Factory Reset`, and the app will return to default state.
+Upon launching GitWriting for the first time, you will see a few prompts to configure settings for the first time. To delete the config file, Choose `Settings -> Factory Reset`, and the app will return to default state.
 
 ### Start Menu
 
@@ -67,50 +64,14 @@ Inspired by Obsidian, Daily Notes allow you to quickly create a diary within you
 ## Build from Source
 
 - Install [PyInstaller](https://pyinstaller.org/en/stable/) using `pip`. See [here](https://pip.pypa.io/en/stable/installation/) if you do not already have `pip` installed with Python.
-- Based on your platfrm, run one of these command from the root directory of your Git repo to create a build.
-- Like most other Python projects, app dependencies are located in `requirements.txt`, or see `Help -> View App Dependencies` within the app.
-- (Optional, do at your own risk): Add `--noconfirm` to the end of the command chain to bypass the override warning.
-
-### Windows & Linux (Recommended)
-
-`pyinstaller -F -n GitWriting --add-data="CHANGELOG.md;." --add-data="README.md;." --add-data="requirements.txt;." --recursive-copy-metadata appdirs --recursive-copy-metadata readchar --recursive-copy-metadata pick main.py`
-
-### macOS (NOT WORKING RIGHT NOW)
-
-`-w | --windowed | --noconsole` enables building an OSX `.app` bundle and Unix executable instead of a `console` document
-
-`pyinstaller -F -n GitWriting --add-data="CHANGELOG.md:." --add-data="README.md:." --add-data="requirements.txt:." --recursive-copy-metadata appdirs --recursive-copy-metadata readchar --recursive-copy-metadata pick main.py`
+- App dependencies are located in `requirements.txt`. See `Help` within the app to view the dependencies, this `README.md`, and `CHANGELOG.md`.
+- Make the build script executable: `chmod +x build.sh`
+- Run the build script: `build.sh`
 
 ## Default Configuration File
 
-*Note: This config is automatically generated if requested after launch. But here are sample files by platform for your reference.
+*Note: The config file, `gitwriting.ini`, is automatically generated in your system's user config folder. Here are sample files by platform for your reference.*
 
-### Unix
-
-```ini
-[PATHS]
-working_directory = 
-editor = nano
-browser = default
-daily_notes = daily
-
-[FLAGS]
-daily_notes = off
-browser_hidden_files = off
-browser_readonly_mode = off
-```
-
-### Windows
-
-```ini
-[PATHS]
-working_directory = 
-editor = notepad.exe
-browser = default
-daily_notes = daily
-
-[FLAGS]
-daily_notes = off
-browser_hidden_files = off
-browser_readonly_mode = off
-```
+- Windows: C:\Users\"User"\AppData\Local\GitWriting\gitwriting.ini
+- Mac: /Users/"user"/Library/Application Support/GitWriting/gitwriting.ini
+- Linux: /home/"user"/.config/GitWriting/gitwriting.ini
