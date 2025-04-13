@@ -37,10 +37,8 @@ build() {
                 --add-data='./src/gitwriting/requirements.txt:.' \
                 --add-data='./CHANGELOG.md:.' \
                 --add-data='./README.md:.' \
-                --recursive-copy-metadata 'python-dotenv' \
                 --recursive-copy-metadata 'appdirs' \
                 --recursive-copy-metadata 'readchar' \
-                --recursive-copy-metadata 'pick' \
                 './src/gitwriting/main.py'
 }
 
