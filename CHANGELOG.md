@@ -1,14 +1,18 @@
 # CHANGELOG
 
-## (WIP) 0.8.7
+## (TBD) 0.8.8
 
-- [X] **Make the app portable.** Generate config file inside the user's default config folder instead of the current working directory
-- [?] Make certain pickers paginated to improve performance on repos with a long history; display the full details of the selected commit after selection
-- [X] Rework "Open Recent" menu to list files by different filters (modification date, uncommitted, etc). Provide different options.
-
+- [] Interactive Git repo setup?
 - [] Add branches, rebasing, merging?
 - [] Add option/choice to automatically stage changes before stashing.
 - [] Create better settings "picker" for the flag options.
+
+## (WIP) 0.8.7
+
+- [X] **Make the app portable.** Generate config file inside the user's system config folder instead of the current working directory
+- [X] Rework "Open Recent" menu to list files by different filters (modification date, uncommitted, etc). Provide different options.
+- [?] Fork `pick` -> `picker` and fix flickering when the screen re-renders. Instead of clearing the curses screen, [erase it](https://lists.gnu.org/archive/html/bug-ncurses/2014-01/msg00007.html).
+- [?] Make certain pickers paginated to improve performance on repos with a long history; display the full details of the selected commit after selection
 
 ## 0.8.6
 

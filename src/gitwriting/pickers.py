@@ -1,12 +1,13 @@
 """Contains pickers created using the 'pick' module"""
+# Python Modules
 import os
-from pick import pick, Option
+# My Modules
+from picker import pick, Option
 import file_utils
 import app_utils as app
 from commands import AppCommand, GitCommand
 from config import AppConfig
 
-INDICATOR = "->"
 # esc, q => quit
 QUIT_KEYS = (27, ord("q"))
 QUIT_OPTION = Option("\n--------------\n(esc|q - quit)", enabled=False)
@@ -35,7 +36,7 @@ class Picker():
         options.append(QUIT_OPTION)
         app.clear(delay=0.1)
         # """Display and handle the picker interaction"""
-        option, index = pick(options, indicator=INDICATOR, quit_keys=QUIT_KEYS)
+        option, index = pick(options, quit_keys=QUIT_KEYS)
         # print(f"Selected option {option} at index {index}, total options: {len(options)}")
         # Return the selected option
         if index in range (1, len(options) - 3):
@@ -80,7 +81,7 @@ class Picker():
         if limit <= 0:
             options.append(Option("No further entries.", enabled=False))
         options.append(QUIT_OPTION)
-        option, index = pick(options, indicator=INDICATOR, quit_keys=QUIT_KEYS)
+        option, index = pick(options, quit_keys=QUIT_KEYS)
         # print(f"Selected option {option} at index {index}, total options: {len(options)}")
         # print(f"Start index = {start_index}")
         # <-- Previous Page
@@ -150,7 +151,7 @@ class Browser():
             options.append(Option(f"[View Hidden Files: {is_browser_hidden_files}]"))
             options.append(Option(f"[Read-Only Mode: {is_browser_readonly_mode}]"))
         options.append(QUIT_OPTION)
-        option, index = pick(options, indicator=INDICATOR, quit_keys=QUIT_KEYS)
+        option, index = pick(options, quit_keys=QUIT_KEYS)
         # print(f"Selected option {option} at index {index}, total options: {len(options)}")
         # Quit
         if index >= len(options) or index == -1:
@@ -218,7 +219,7 @@ class Browser():
         else:
             options.append(Option("[Confirm Folder & Quit]"))
         options.append(QUIT_OPTION)
-        option, index = pick(options, indicator=INDICATOR, quit_keys=QUIT_KEYS)
+        option, index = pick(options, quit_keys=QUIT_KEYS)
         # print(f"Selected option {self.current_path} at index {index}, total options: {len(options)}")
         # Quit
         if index >= len(options) or index == -1:
