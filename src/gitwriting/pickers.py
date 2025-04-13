@@ -34,7 +34,7 @@ class Picker():
         options.append(Option(f"[View Hidden Files: {is_browser_hidden_files}]"))
         options.append(Option(f"[Read-Only Mode: {is_browser_readonly_mode}]"))
         options.append(QUIT_OPTION)
-        app.clear(delay=0.1)
+        app.clear(delay=0.05)
         # """Display and handle the picker interaction"""
         option, index = pick(options, quit_keys=QUIT_KEYS)
         # print(f"Selected option {option} at index {index}, total options: {len(options)}")
@@ -60,7 +60,7 @@ class Picker():
 
     def show_paginated(self):
         """Initialize the picker"""
-        app.clear(delay=0.1)
+        app.clear(delay=0.05)
         options = []
         start_index = 0
         limit = 20
@@ -123,7 +123,7 @@ class Browser():
 
     def show(self):
         """Display the file browser, starting at start_path (Default=executable root)"""
-        app.clear(delay=0.1)
+        app.clear(delay=0.05)
         is_browser_hidden_files = self.app_cfg.is_browser_hidden_files_enabled()
         is_browser_readonly_mode = self.app_cfg.is_browser_readonly_mode_enabled()
         back_path = file_utils.get_path_head(self.current_path)
@@ -155,7 +155,6 @@ class Browser():
         # print(f"Selected option {option} at index {index}, total options: {len(options)}")
         # Quit
         if index >= len(options) or index == -1:
-            app.print_info("Cancelled directory change.")
             self.current_path = None
             return
         # Go Back
@@ -205,6 +204,7 @@ class Browser():
 
     def select_directory(self):
         """Display the file browser, starting at the specified path (Default=executable root). (DIRECTORIES ONLY)"""
+        app.clear(delay=0.05)
         back_path = file_utils.get_path_head(self.current_path)
         options = file_utils.get_folders_in_directory(self.current_path, include_hidden=False)
         if not options:
