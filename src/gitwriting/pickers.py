@@ -127,25 +127,35 @@ class Browser():
         is_browser_readonly_mode = self.app_cfg.is_browser_readonly_mode_enabled()
         back_path = file_utils.get_path_head(self.current_path)
         start_index = 0
-        options = file_utils.get_entries_in_directory(self.current_path,
-            include_hidden=is_browser_hidden_files)
-        if not options or not os.access(self.current_path, os.R_OK):
-            options = []
+        options = []
+        # Check for read access first
+        if not os.access(self.current_path, os.R_OK):
             options.append(Option(f"DIR: {self.current_path}", enabled=False))
             options.append("../")
-            options.append(Option("Read access denied. Please choose a different folder.", enabled=False))
+            options.append(Option("Read access denied.", enabled=False))
         else:
-            options.insert(start_index, Option(f"DIR: {self.current_path}", enabled=False))
-            if not self.__is_at_root_directory(back_path):
-                start_index = 1
-                options.insert(start_index, "../")
+            options = file_utils.get_entries_in_directory(self.current_path,
+                include_hidden=is_browser_hidden_files)
+            # Then get the directory's entries
+            if not options:
+                options = []
+                options.append(Option(f"DIR: {self.current_path}", enabled=False))
+                options.append("../")
+            else:
+                options.insert(start_index, Option(f"DIR: {self.current_path}", enabled=False))
+                if not self.__is_at_root_directory(back_path):
+                    start_index = 1
+                    options.insert(start_index, "../")
+            # Add these settings toggles if the path has read access, regardless of empty directory
             options.append(Option(f"[View Hidden Files: {is_browser_hidden_files}]"))
             options.append(Option(f"[Read-Only Mode: {is_browser_readonly_mode}]"))
         options.append(QUIT_OPTION)
         option, index = pick(options, indicator=INDICATOR, quit_keys=QUIT_KEYS)
         # print(f"Selected option {option} at index {index}, total options: {len(options)}")
         # Quit
-        if index == len(options) or index == -1:
+        if index >= len(options) or index == -1:
+            app.print_info("Cancelled directory change.")
+            self.current_path = None
             return
         # Go Back
         if index == start_index:
@@ -196,20 +206,24 @@ class Browser():
         """Display the file browser, starting at the specified path (Default=executable root). (DIRECTORIES ONLY)"""
         back_path = file_utils.get_path_head(self.current_path)
         options = file_utils.get_folders_in_directory(self.current_path, include_hidden=False)
-        if not options or not os.access(self.current_path, os.R_OK):
+        if not options:
             options = []
             options.append(Option(f"DIR: {self.current_path}", enabled=False))
             options.append("../")
-            options.append(Option("Read access denied. Please choose a different folder.", enabled=False))
         else:
             options.insert(0, Option(f"DIR: {self.current_path}", enabled=False))
             options.insert(1, "../")
+        if not os.access(self.current_path, os.R_OK):
+            options.append(Option("Read access denied. Please choose a different folder.", enabled=False))
+        else:
             options.append(Option("[Confirm Folder & Quit]"))
         options.append(QUIT_OPTION)
         option, index = pick(options, indicator=INDICATOR, quit_keys=QUIT_KEYS)
         # print(f"Selected option {self.current_path} at index {index}, total options: {len(options)}")
         # Quit
-        if index == len(options) or index == -1:
+        if index >= len(options) or index == -1:
+            app.print_info("Cancelled directory change.")
+            self.current_path = None
             return
         # Go Back
         if index == 1:

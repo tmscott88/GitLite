@@ -6,6 +6,7 @@ from datetime import datetime
 import appdirs
 # My modules
 import app_utils as app
+from commands import GitCommand
 
 class Config:
     """The base config class"""
@@ -99,16 +100,22 @@ class AppConfig(Config):
 
     def generate(self):
         """Generate a new config file if it doesn't exist already"""
+        git_cmd = GitCommand()
         try:
+            # Default working dir to system "Home" folder
+            working_dir = os.path.expanduser("~")
+            if git_cmd.is_inside_git_repo():
+                working_dir = git_cmd.get_repo_root()
             if app.platform_is_windows():
+                # Default to system "home" directory
                 self.parser['PATHS'] = {
-                    'working_directory': os.getcwd(),
+                    'working_directory': working_dir,
                     'editor': 'notepad.exe',
                     'browser': 'default',
                     'daily_notes': 'daily'}
             elif app.platform_is_unix():
                 self.parser['PATHS'] = {
-                    'working_directory': os.getcwd(),
+                    'working_directory': working_dir,
                     'editor': 'nano',
                     'browser': 'default',
                     'daily_notes': 'daily'}

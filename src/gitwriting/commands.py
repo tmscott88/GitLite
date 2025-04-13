@@ -165,7 +165,7 @@ class GitCommand(Command):
         self.show_changes()
 
     def is_inside_git_repo(self):
-        """If the working directory is inside a git repo, changes working directory to root of the git repo"""
+        """Returns whether the current working directory is inside a git repo"""
         try:
             path = self.get_repo_root()
             if "fatal" in path:

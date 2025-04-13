@@ -231,10 +231,10 @@ def settings_menu():
     """Shows the app settings menu, each of which modify the GitWriting config file."""
     menu = Menu("Settings")
     menu.add_option(1, "Back to Main Menu", main_menu)
-    menu.add_option(2, "Default Apps", __default_apps_menu)
-    menu.add_option(3, "Browser Settings", __browser_settings_menu)
-    menu.add_option(4, "Daily Notes", __daily_notes_menu)
-    menu.add_option(5, "Working Directory", prompts.prompt_select_repo)
+    menu.add_option(2, "Working Directory", prompts.prompt_select_repo)
+    menu.add_option(3, "Default Apps", __default_apps_menu)
+    menu.add_option(4, "Browser Settings", __browser_settings_menu)
+    menu.add_option(5, "Daily Notes", __daily_notes_menu)
     # TODO convert the Flags settings to a settings picker?
     menu.add_option(0, "\u26A0 Factory Reset \u26A0",
         __confirm_factory_reset)

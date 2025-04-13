@@ -41,7 +41,7 @@ def prompt_create_config(is_full_launch=True):
     else:
         app.print_info("Skipping daily notes path selection since it is disabled...")
     app_cfg.show()
-    app.print_success("That's all!")
+    app.print_success("Config setup complete.")
     app.print_info("These settings can be changed anytime under [Main Menu -> Settings].")
     app.print_info("Get help anytime at these locations:", new_line=False)
     app.print_info("[Main Menu -> Help] or https://github.com/tmscott88/GitWriting/blob/main/README.md", new_line=False)
@@ -63,11 +63,16 @@ def prompt_select_repo():
         browser = Browser(os.getcwd())
         browser.select_directory()
         new_path = browser.current_path
+        # If the browser was quit, don't change working directory
+        if not new_path:
+            return
         app.change_working_directory(new_path)
         if git_cmd.is_inside_git_repo():
             root = git_cmd.get_repo_root()
-            app_cfg.set_default_working_directory(root if root else new_path)
-            app.print_success(f"Changed working directory: '{root if root else new_path}'")
+            app_cfg.set_default_working_directory(root)
+            # Defaults to git repo root if it exists
+            app.change_working_directory(root)
+            app.print_success(f"Changed working directory: '{root}'")
             return
         prompt_select_repo()
     except OSError as e:
