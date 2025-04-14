@@ -6,6 +6,7 @@ import sys
 from config import AppConfig
 from commands import GitCommand, AppCommand
 import app_utils as app
+import file_utils
 import menus
 import prompts
 
@@ -24,8 +25,11 @@ def main():
         app_cfg.read()
         # Use the working directory from the config file
         working_dir = app_cfg.get_default_working_directory()
+        # If working dir doesn't exist or is invalid format, should create new config
+        if not working_dir or not file_utils.is_directory(working_dir):
+            raise OSError
         app.change_working_directory(working_dir)
-    except FileNotFoundError:
+    except (FileNotFoundError, OSError):
         prompts.prompt_create_config()
     # Check if the working directory is in a Git repo
     if not git_cmd.is_inside_git_repo():
