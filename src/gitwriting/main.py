@@ -27,9 +27,11 @@ def main():
         app.change_working_directory(working_dir)
     except FileNotFoundError:
         prompts.prompt_create_config()
-    # Check is we're in a Git repo
+    # Check if the working directory is in a Git repo
     if not git_cmd.is_inside_git_repo():
         prompts.prompt_select_repo()
+    else:
+        app_cfg.set_working_directory_to_repo()
     menus.main_menu()
 
 

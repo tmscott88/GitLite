@@ -202,6 +202,15 @@ class AppConfig(Config):
         """Sets the default working directory in the config file"""
         self.set_value('PATHS', 'working_directory', new_path)
 
+    def set_working_directory_to_repo(self):
+        """Sets the default working directory to the git repo."""
+        git_cmd = GitCommand()
+        root = git_cmd.get_repo_root()
+        self.set_default_working_directory(root)
+        # Defaults to git repo root if it exists
+        app.change_working_directory(root)
+        app.print_success(f"Git Repo: '{root}'")
+
     def show_config_template(self):
         """View a working sample config file"""
         print(f"""

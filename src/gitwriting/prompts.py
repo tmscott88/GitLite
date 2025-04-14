@@ -66,14 +66,12 @@ def prompt_select_repo():
         # If the browser was quit, don't change working directory
         if not new_path:
             return
+        # Need to change working directory first before checking Git repo
         app.change_working_directory(new_path)
         if git_cmd.is_inside_git_repo():
-            root = git_cmd.get_repo_root()
-            app_cfg.set_default_working_directory(root)
-            # Defaults to git repo root if it exists
-            app.change_working_directory(root)
-            app.print_success(f"Changed working directory: '{root}'")
+            app_cfg.set_working_directory_to_repo()
             return
+        app_cfg.set_default_working_directory(new_path)
         prompt_select_repo()
     except OSError as e:
         app.print_error(f"Error while selecting new directory: {e}")
