@@ -188,12 +188,12 @@ class AppCommand(Command):
 
     def open_editor(self, editor, fpath):
         """Opens the specified file in the specified editor."""
-        history.update(fpath)
+        history.add(fpath)
         self.run(f"{editor} {fpath}")
 
     def view_file(self, fpath):
         """Opens the specified file in read-only mode"""
-        history.update(fpath)
+        history.add(fpath)
         if app.platform_is_windows():
             self.run(f"more {fpath}", is_shell=True)
         else:

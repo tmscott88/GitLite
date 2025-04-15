@@ -108,9 +108,9 @@ def __recent_file_picker(recents_filter="modified", title="[Picker]"):
                     populator=functools.partial(git_cmd.get_changes,
                     names_only=True, full_paths=True))
         case "last_opened":
-            picker = Picker(title=title, populator=history.read)
+            picker = Picker(title=title, populator=functools.partial(history.read, reverse_for_display=True))
         case _:
-            picker = Picker(title=title, populator=history.read)
+            picker = Picker(title=title, populator=functools.partial(history.read, reverse_for_display=True))
     picker.show()
 
 def diff_menu():
