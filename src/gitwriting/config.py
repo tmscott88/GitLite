@@ -3,7 +3,6 @@
 import os
 import configparser
 from datetime import datetime
-import appdirs
 # My modules
 import app_utils as app
 from commands import GitCommand
@@ -92,8 +91,7 @@ class Config:
 
 class AppConfig(Config):
     """Perform app-specific operations to the base config file"""
-    _path = os.path.join(
-        appdirs.user_config_dir(appname=app.APP_NAME, appauthor=False), "gitwriting.ini")
+    _path = app.get_user_config_resource_path("gitwriting.ini")
 
     def __init__(self, quiet=False):
         super().__init__(quiet=False)

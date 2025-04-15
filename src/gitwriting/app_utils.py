@@ -2,11 +2,10 @@
 import os
 import sys
 import time
-import appdirs
 from readchar import readkey
+import appdirs
 
 APP_NAME = "GitWriting"
-CONFIG_NAME = "gitwriting.ini"
 VERSION = "0.8.8"
 PROJECT_URL = "https://github.com/tmscott88/GitWriting"
 
@@ -42,6 +41,11 @@ def get_system_app(app_type):
             print_warning("Platform not supported.")
         case _:
             print_error(f"App type '{app_type}' is not supported.")
+
+def get_user_config_resource_path(fname):
+    """Returns the absolute path to a resource (if the resource exists in the user config directory)"""
+    return os.path.join(
+        appdirs.user_config_dir(appname=APP_NAME, appauthor=False), fname)
 
 def get_python_resource_path(relative_path):
     """Returns the absolute path to a resource (if the resource exists in the app data)

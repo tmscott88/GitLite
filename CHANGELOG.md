@@ -2,15 +2,14 @@
 
 ## (TBD) 0.8.8
 
-- [] Config profiles (different config file for each repository)
+- [] Workspace/config profiles (different config file for each repository)
 - [?] Recents menu: Store recents in a JSON file instead of walking the entire directory & subdirectories
   - [X] Shows most recent files
+- [X] Change browser settings to a minimal settings picker
 - [] Favorites menu?
 - [] Shortcut to search for files within browser
 - [] Interactive Git repo setup?
 - [] Add branches, rebasing, merging?
-- [] Add option/choice to automatically stage changes before stashing.
-- [] Create better settings "picker" for the flag options.
 
 ## 0.8.7
 
