@@ -33,14 +33,14 @@ class Picker():
         if self.populator is not None:
             options = self.populator()
             options.insert(0, Option(self.title, enabled=False))
-        options.append(Option(self.title, enabled=False))
+        else:
+            options.append(Option(self.title, enabled=False))
         options.append(Option(f"[View Hidden Files: {is_browser_hidden_files}]"))
         options.append(Option(f"[Read-Only Mode: {is_browser_readonly_mode}]"))
         options.append(QUIT_OPTION)
         app.clear(delay=0.05)
         # """Display and handle the picker interaction"""
         option, index = pick(options, quit_keys=QUIT_KEYS)
-        # print(f"Selected option {option} at index {index}, total options: {len(options)}")
         # Return the selected option
         if index in range (1, len(options) - 3):
             self.__on_select_file(option)
@@ -68,8 +68,6 @@ class Picker():
         start_index = 0
         limit = 20
         next_index = limit * self.current_index
-        # print(f"Current index = {self.current_index}")
-        # print(f"Next index = {next_index}")
         # Handle the last pagination forward
         if next_index + limit >= self.total_entries:
             limit = self.total_entries - next_index
@@ -84,8 +82,6 @@ class Picker():
             options.append(Option("No further entries.", enabled=False))
         options.append(QUIT_OPTION)
         option, index = pick(options, quit_keys=QUIT_KEYS)
-        # print(f"Selected option {option} at index {index}, total options: {len(options)}")
-        # print(f"Start index = {start_index}")
         # <-- Previous Page
         if index == start_index:
             if self.current_index == 0:
@@ -100,7 +96,6 @@ class Picker():
         # Set option
         if index in range(start_index + 1, len(options) - 2):
             self.current_option = option
-            # print(f"Index {index} is in range ({start_index + 1}, {len(options) - 2})")
 
     def __on_select_file(self, fpath):
         """Handle the file selection"""
@@ -156,7 +151,6 @@ class Browser():
             options.append(Option(f"[Read-Only Mode: {is_browser_readonly_mode}]"))
         options.append(QUIT_OPTION)
         option, index = pick(options, quit_keys=QUIT_KEYS)
-        # print(f"Selected option {option} at index {index}, total options: {len(options)}")
         # Quit
         if index >= len(options) or index == -1:
             self.current_path = None
