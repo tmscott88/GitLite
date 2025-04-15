@@ -5,7 +5,7 @@ import file_utils
 
 def read(reverse_for_display=False):
     """Tries to read the history file"""
-    _path = app.get_user_config_resource_path("history.ini")
+    _path = app.get_user_config_resource_path("history.json")
     try:
         # Read JSON file
         with open(_path, 'r', encoding="utf-8") as f:
@@ -27,7 +27,7 @@ def read(reverse_for_display=False):
 
 def save(data, message=""):
     """Writes and saves a value to the history file using json.dump()"""
-    _path = app.get_user_config_resource_path("history.ini")
+    _path = app.get_user_config_resource_path("history.json")
     try:
         # Read JSON file
         with open(_path, 'w', encoding="utf-8") as f:
