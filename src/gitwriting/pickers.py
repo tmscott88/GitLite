@@ -29,8 +29,11 @@ class Picker():
         """Initialize the picker (no pagination)"""
         is_browser_hidden_files = self.app_cfg.is_browser_hidden_files_enabled()
         is_browser_readonly_mode = self.app_cfg.is_browser_readonly_mode_enabled()
-        options = self.populator()
-        options.insert(0, Option(self.title, enabled=False))
+        options = []
+        if self.populator is not None:
+            options = self.populator()
+            options.insert(0, Option(self.title, enabled=False))
+        options.append(Option(self.title, enabled=False))
         options.append(Option(f"[View Hidden Files: {is_browser_hidden_files}]"))
         options.append(Option(f"[Read-Only Mode: {is_browser_readonly_mode}]"))
         options.append(QUIT_OPTION)
@@ -70,7 +73,6 @@ class Picker():
         # Handle the last pagination forward
         if next_index + limit >= self.total_entries:
             limit = self.total_entries - next_index
-            # print(f"Next index {next_index} + limit {limit} >= total entries {self.total_entries}, limit = {limit}")
         options.append(Option(self.title, enabled=False))
         if self.current_index > 0:
             start_index = 1
@@ -131,6 +133,7 @@ class Browser():
         options = []
         # Check for read access first
         if not os.access(self.current_path, os.R_OK):
+            start_index = 1
             options.append(Option(f"DIR: {self.current_path}", enabled=False))
             options.append("../")
             options.append(Option("Read access denied.", enabled=False))
@@ -139,6 +142,7 @@ class Browser():
                 include_hidden=is_browser_hidden_files)
             # Then get the directory's entries
             if not options:
+                start_index = 1
                 options = []
                 options.append(Option(f"DIR: {self.current_path}", enabled=False))
                 options.append("../")
@@ -220,7 +224,6 @@ class Browser():
             options.append(Option("[Confirm Folder & Quit]"))
         options.append(QUIT_OPTION)
         option, index = pick(options, quit_keys=QUIT_KEYS)
-        # print(f"Selected option {self.current_path} at index {index}, total options: {len(options)}")
         # Quit
         if index >= len(options) or index == -1:
             app.print_info("Cancelled directory change.")
@@ -228,13 +231,11 @@ class Browser():
             return
         # Go Back
         if index == 1:
-            # What happens once we reach the system's root path?
             if os.access(back_path, os.R_OK):
                 self.current_path = back_path
                 self.select_directory()
         # Select Folder
         elif index == len(options) - 2:
-            # print(f"Confirm {self.current_path} at index {index}")
             return
         # Next Folder
         elif index in range (1, len(options) - 2):

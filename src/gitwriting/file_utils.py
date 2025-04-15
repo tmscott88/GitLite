@@ -2,28 +2,21 @@
 import os
 import app_utils as app
 
-def get_all_files_by_modified_date(path, include_hidden=False):
-    """Returns a cumulative list of files using os.walk()"""
-    ignore = ['build', 'dist', '.git', '__pycache__']
-    invalid_extensions=('.app','.dmg','.pkg','.exe','.msi')
-    limit = 20
-    paths_sorted = sorted([
-        os.path.join(root, f)
-        for root,_, files in os.walk(path)
-        for f in files][:limit],
-        key=os.path.getctime, reverse=True)
-    results = []
-    if not include_hidden:
-        results = [
-            path for path in paths_sorted
-            if not path.startswith('.') and not path.endswith(invalid_extensions) and not any(i in path.split(os.sep)
-            for i in ignore)]
-    else:
-        results = [
-            path for path in paths_sorted
-            if not path.endswith(invalid_extensions) and not any(i in path.split(os.sep)
-            for i in ignore)]
-    return results
+def get_standard_path(path):
+    """(For Windows) Converts the specified path to a standardized path format with forward slashes instead of backward slashes."""
+    return path.strip().replace(os.sep, '/')
+
+def get_absolute_path(rel_path):
+    """Returns the absolute path of a relative path, starting at the working directory"""
+    return os.path.abspath(rel_path)
+
+def get_relative_path(abs_path):
+    """Converts an absolute path to a relative path, starting at the working directory"""
+    try:
+        return os.path.relpath(abs_path, start=os.getcwd())
+    except ValueError as e:
+        app.print_error(f"Could not convert '{abs_path}' to a relative path. {e}")
+    return None
 
 def get_entries_in_directory(path, include_hidden=False):
     """(Python 3.5+) Return a list of DirEntry object names,

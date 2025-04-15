@@ -1,5 +1,4 @@
 """Contains the interactive menus"""
-
 import os
 import sys
 import functools
@@ -7,6 +6,7 @@ from shutil import which
 
 import app_utils as app
 import file_utils
+import history
 from config import AppConfig
 from commands import AppCommand, GitCommand
 from menu import Menu
@@ -89,23 +89,28 @@ def recent_files_menu():
     """Gives different options for how to view "recent" files."""
     menu = Menu("Open Recent")
     menu.add_option(1, "Back to File Menu", file_menu)
-    menu.add_option(2, "By Last Modified Date", functools.partial(__recent_file_picker, title="[Open Recent]", recents_filter="modified"))
+    menu.add_option(2, "Last Opened",
+        functools.partial(__recent_file_picker, title="[Open Recent]", recents_filter="last_opened"))
     if git_cmd.is_inside_git_repo():
-        menu.add_option(3, "By Git Index", functools.partial(__recent_file_picker, title="[Changes]", recents_filter="git_status"))
+        menu.add_option(3, "Git Index",
+            functools.partial(__recent_file_picker, title="[Changes]", recents_filter="git_index"))
     menu.show()
 
 def __recent_file_picker(recents_filter="modified", title="[Picker]"):
     """Opens a Curses picker menu to select a recently modified file."""
     match(recents_filter):
-        case "git_status":
+        case "git_index":
             if not git_cmd.is_inside_git_repo():
                 app.print_warning("Cannot view recent files by git status. Not inside a git repo.")
             else:
-                picker = Picker(title=title, populator=functools.partial(git_cmd.get_changes, names_only=True))
-        case "modified":
-            picker = Picker(title=title, populator=functools.partial(file_utils.get_all_files_by_modified_date, os.getcwd(), include_hidden=False))
+                picker = Picker(
+                    title=title,
+                    populator=functools.partial(git_cmd.get_changes,
+                    names_only=True, full_paths=True))
+        case "last_opened":
+            picker = Picker(title=title, populator=history.read)
         case _:
-            picker = Picker(title=title, populator=functools.partial(file_utils.get_all_files_by_modified_date, os.getcwd(), include_hidden=False))
+            picker = Picker(title=title, populator=history.read)
     picker.show()
 
 def diff_menu():
@@ -152,7 +157,7 @@ def stash_menu():
 def __select_stash_menu(operation):
     """Shows a list of stashes in the local history. Proceeds with the stash operation."""
     if operation in ("apply", "pop") and git_cmd.get_changes():
-        app.print_warning("Cannot safely apply a stash. Please commit, stash, or clean your changes first.")
+        app.print_warning("Cannot safely apply a stash. Please commit, stash, or clean changes first.")
         return
     menu = Menu("Select a Stash")
     options = git_cmd.get_stashes(names_only=True)
@@ -233,10 +238,9 @@ def settings_menu():
     menu.add_option(1, "Back to Main Menu", main_menu)
     menu.add_option(2, "Working Directory", prompts.prompt_select_repo)
     menu.add_option(3, "Default Apps", __default_apps_menu)
-    menu.add_option(4, "Browser Settings", __browser_settings_menu)
+    menu.add_option(4, "Browser Settings", __browser_settings_picker)
     menu.add_option(5, "Daily Notes", __daily_notes_menu)
-    # TODO convert the Flags settings to a settings picker?
-    menu.add_option(0, "\u26A0 Factory Reset \u26A0",
+    menu.add_option(0, "Factory Reset \u26A0",
         __confirm_factory_reset)
     app_cfg.read()
     app_cfg.show()
@@ -253,20 +257,12 @@ def __default_apps_menu():
         functools.partial(prompts.set_app, "editor"))
     menu.show(post_action=app_cfg.show)
 
-def __browser_settings_menu():
-    """Shows the sub-menu to set the internal browser settings"""
-    menu = Menu("Browser Settings")
-    menu.add_option(1, "Back to Settings",
-        settings_menu)
-    menu.add_option(2, "Enable Hidden Files (Browser)",
-        functools.partial(__set_browser_hidden_files_status, "on"))
-    menu.add_option(3, "Disable Hidden Files (Browser)",
-        functools.partial(__set_browser_hidden_files_status, "off"))
-    menu.add_option(4, "Enable Read-Only Mode (Browser)",
-        functools.partial(__set_browser_readonly_mode_status, "on"))
-    menu.add_option(5, "Disable Read-Only Mode (Browser)",
-        functools.partial(__set_browser_readonly_mode_status, "off"))
-    menu.show(post_action=app_cfg.show)
+def __browser_settings_picker():
+    """Shows a minimal picker to set the internal browser settings"""
+    picker = Picker(
+        title="[Browser Settings]",
+        populator=None)
+    picker.show()
 
 def __daily_notes_menu():
     """Shows the sub-menu to set daily notes settings"""
@@ -335,18 +331,19 @@ def __open_default_browser():
 def __open_new_file():
     """Prompt new file. If the file already exists, opens the file in the defined editor."""
     path = input("Enter new file name (or pass empty name to cancel): ")
+    abs_path = file_utils.get_absolute_path(path)
     if not path:
         app.print_error("Canceled operation.")
     else:
-        if file_utils.is_file(path):
-            __open_app("editor", path)
+        if file_utils.is_file(abs_path):
+            __open_app("editor", abs_path)
         else:
-            file_utils.create_new_file(path)
+            file_utils.create_new_file(abs_path)
             # Only open editor if file was created properly from the previous step
-            if file_utils.is_file(path):
-                __open_app("editor", path)
+            if file_utils.is_file(abs_path):
+                __open_app("editor", abs_path)
             else:
-                app.print_error(f"Failed to create or find file '{path}'")
+                app.print_error(f"Failed to create or find file '{abs_path}'")
 
 def __open_daily_note():
     """If Daily Notes features is enabled, creates and/or opens today's note at a generated path."""
@@ -354,8 +351,8 @@ def __open_daily_note():
         print("\nDaily Notes disabled. See Main Menu -> Settings to enable this feature.")
     else:
         fpath = app_cfg.get_today_note_path()
-        file_utils.create_new_file(fpath)
-        __open_app("editor", fpath)
+        file_utils.create_new_file(os.path.abspath(fpath))
+        __open_app("editor", os.path.abspath(fpath))
 
 def __set_daily_notes_status(new_status):
     """Helper function to enable or disable the Daily Notes feature."""

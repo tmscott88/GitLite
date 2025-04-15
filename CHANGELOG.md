@@ -2,6 +2,9 @@
 
 ## (TBD) 0.8.8
 
+- [?] Recents menu: Store recents in a JSON file instead of walking the entire directory & subdirectories
+  - [?] If the selected file is already in the recents list, prevents duplicate entry, but odd sorting behavior occurs
+  - [X] Shows most recent files
 - [] Interactive Git repo setup?
 - [] Add branches, rebasing, merging?
 - [] Add option/choice to automatically stage changes before stashing.

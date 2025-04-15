@@ -1,6 +1,8 @@
 """Contains subprocess functions and classes to hold Git & App-specific commands"""
+import os
 import subprocess
 import app_utils as app
+import history
 
 class Command:
     """Base class for the commands module.
@@ -40,11 +42,13 @@ class GitCommand(Command):
         """Returns the root of the Git repo"""
         return self.get_output("git rev-parse --show-toplevel")[0]
 
-    def get_changes(self, names_only=False):
+    def get_changes(self, names_only=False, full_paths=False):
         """Returns the Git repo's uncommitted changes (full or names only)"""
         changes = self.get_output("git status -s -u")
         if changes and names_only:
-            return [fname[3:] for fname in self.get_changes()]
+            if full_paths:
+                return [os.path.abspath(fname[3:]) for fname in changes]
+            return [fname[3:] for fname in changes]
         return changes
 
     def get_commits(self, hashes_only=False, index=0, limit=-1):
@@ -183,11 +187,13 @@ class AppCommand(Command):
         self.run(browser)
 
     def open_editor(self, editor, fpath):
-        """Opens the specified editor."""
+        """Opens the specified file in the specified editor."""
+        history.update(fpath)
         self.run(f"{editor} {fpath}")
 
     def view_file(self, fpath):
         """Opens the specified file in read-only mode"""
+        history.update(fpath)
         if app.platform_is_windows():
             self.run(f"more {fpath}", is_shell=True)
         else:
@@ -195,18 +201,18 @@ class AppCommand(Command):
 
     def show_changelog(self):
         """Fetches the app's changelog path"""
-        path = app.get_resource_path("CHANGELOG.md")
+        path = app.get_python_resource_path("CHANGELOG.md")
         if path:
             self.view_file(path)
 
     def show_readme(self):
         """Fetches the app's README path"""
-        path = app.get_resource_path("README.md")
+        path = app.get_python_resource_path("README.md")
         if path:
             self.view_file(path)
 
     def show_requirements(self):
         """Fetches the app's Python requirements (dependencies) path"""
-        path = app.get_resource_path("requirements.txt")
+        path = app.get_python_resource_path("requirements.txt")
         if path:
             self.view_file(path)
