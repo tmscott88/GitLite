@@ -74,14 +74,14 @@ class Config:
             if message != "":
                 app.print_success(message)
         except FileNotFoundError:
-            app.print_error("Could not find a valid config file.")
+            app.print_error(f"Could not find a valid config file at '{self._path}'.")
         except configparser.Error as e:
             app.print_error(f"Failed to save the config file. {e}")
 
     def show(self):
         """Displays the config file, section by section"""
         try:
-            print(f"\nConfig Path: {self._path}")
+            app.print_success(f"Config: {self._path}")
             for section in self.parser.sections():
                 print()
                 print(f"[{section}]")
@@ -92,7 +92,8 @@ class Config:
 
 class AppConfig(Config):
     """Perform app-specific operations to the base config file"""
-    _path = os.path.join(appdirs.user_config_dir(appname=app.NAME, appauthor=False), "gitwriting.ini")
+    _path = os.path.join(
+        appdirs.user_config_dir(appname=app.APP_NAME, appauthor=False), "gitwriting.ini")
 
     def __init__(self, quiet=False):
         super().__init__(quiet=False)
@@ -236,7 +237,7 @@ class AppConfig(Config):
                 app.print_success(f"Deleted config file '{self._path}'")
             else:
                 app.print_info(f"{self._path} not found.")
-            app.print_warning(f"{app.NAME} must be restarted in order to continue.")
+            app.print_warning(f"{app.APP_NAME} must be restarted in order to continue.")
             app.prompt_exit()
         except (OSError, FileNotFoundError) as e:
             app.print_error(f"Could not perform factory reset: {e}")

@@ -2,11 +2,12 @@
 import os
 import sys
 import time
+import appdirs
 from readchar import readkey
 
-NAME = "GitWriting"
+APP_NAME = "GitWriting"
 CONFIG_NAME = "gitwriting.ini"
-VERSION = "0.8.7"
+VERSION = "0.8.8"
 PROJECT_URL = "https://github.com/tmscott88/GitWriting"
 
 def clear(delay=0):
@@ -16,10 +17,6 @@ def clear(delay=0):
     elif platform_is_unix():
         os.system('clear')
     time.sleep(delay)
-
-def get_standard_path(path):
-    """(Windows) Converts the specified path to a standardized path format with forward slashes insstead of backward slashes."""
-    return path.strip().replace(os.sep, '/')
 
 def change_working_directory(new_directory):
     """Change the working directory using os.chdir()."""
@@ -46,7 +43,7 @@ def get_system_app(app_type):
         case _:
             print_error(f"App type '{app_type}' is not supported.")
 
-def get_resource_path(relative_path):
+def get_python_resource_path(relative_path):
     """Returns the absolute path to a resource (if the resource exists in the app data)
         Works for dev and for PyInstaller.
         Resources must be added when building the app, e.g. with PyInstaller (--add-data ...)"""
@@ -57,7 +54,7 @@ def get_resource_path(relative_path):
         print_error(f"Could not find an app resource path for '{relative_path}'.")
         print_warning("This feature is unavailable when running the app from source.")
         print_warning(f"Please build the app using PyInstaller (See README) or download the latest release from: {PROJECT_URL}.")
-        return None
+    return None
 
 def platform_is_windows():
     """Using os.name, returns True if 'nt'."""
@@ -91,7 +88,7 @@ def prompt_continue(any_key=False):
 
 def print_version():
     """Helper function to print the app version"""
-    print(f"{NAME} {VERSION}")
+    print(f"{APP_NAME} {VERSION}")
 
 def print_author():
     """Helper function to print the app author and project URL"""
