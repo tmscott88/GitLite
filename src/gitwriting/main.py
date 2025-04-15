@@ -9,6 +9,7 @@ import app_utils as app
 import file_utils
 import menus
 import prompts
+import history
 
 app_cfg = AppConfig(quiet=True)
 git_cmd = GitCommand()
@@ -16,6 +17,7 @@ app_cmd = AppCommand()
 
 def main():
     """Entry point method"""
+    # Check file history file
     # Launch arguments
     while len(sys.argv) > 1:
         __handle_launch_args()
@@ -23,6 +25,7 @@ def main():
     # Check for a config file
     try:
         app_cfg.read()
+        history.read()
         # Use the working directory from the config file
         working_dir = app_cfg.get_default_working_directory()
         # If working dir doesn't exist or is invalid format, should create new config
