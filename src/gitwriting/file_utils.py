@@ -55,13 +55,11 @@ def get_folders_in_directory(path, include_hidden=False):
 
 def get_path_head(path):
     """Returns one directory higher than the specified path."""
-    head, _ = os.path.split(path)
-    return head
+    return os.path.split(path)[0]
 
 def get_path_tail(path):
     """Returns the last part of the path"""
-    _, tail = os.path.split(path)
-    return tail
+    return os.path.split(path)[1]
 
 def create_new_file(new_path):
     """Creates a new file if needed."""

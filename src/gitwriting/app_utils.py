@@ -56,7 +56,7 @@ def get_python_resource_path(relative_path):
         return os.path.join(sys._MEIPASS, relative_path)
     except AttributeError:
         print_error(f"Could not find an app resource path for '{relative_path}'.")
-        print_warning("This feature is unavailable when running the app from source.")
+        print_warning(f"This feature is unavailable when running {APP_NAME} from source.")
         print_warning(f"Please build the app using PyInstaller (See README) or download the latest release from: {PROJECT_URL}.")
     return None
 

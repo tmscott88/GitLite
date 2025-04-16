@@ -51,14 +51,9 @@ def prompt_create_config(is_full_launch=True):
             print("\nBye.")
             sys.exit()
 
-def prompt_select_repo():
-    """Prompt to select a repo using a directory picker"""
-    if not git_cmd.is_inside_git_repo():
-        app.print_error(f"The working directory '{os.getcwd()}' is not part of a Git repository.")
-    app.print_question("Change working directory? ")
-    if not app.prompt_continue():
-        app.print_error("Canceled directory change.")
-        return
+def prompt_select_folder():
+    """Select a folder (working directory) using a directory picker. 
+        Raises prompt if the selected directory is not within a Git repo"""
     try:
         browser = Browser(os.getcwd())
         browser.select_directory()
@@ -72,7 +67,6 @@ def prompt_select_repo():
             app_cfg.set_working_directory_to_repo()
             return
         app_cfg.set_default_working_directory(new_path)
-        prompt_select_repo()
     except OSError as e:
         app.print_error(f"Error while selecting new directory: {e}")
 
