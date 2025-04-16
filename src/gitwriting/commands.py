@@ -2,6 +2,7 @@
 import os
 import subprocess
 import app_utils as app
+import file_utils
 import history
 
 class Command:
@@ -34,13 +35,16 @@ class Command:
         except subprocess.CalledProcessError as e:
             if not self.quiet:
                 app.print_error(f"Failed to get output from command '{command}: {e}'")
-            raise
+        return None
 
 class GitCommand(Command):
     """Runs git commands"""
     def get_repo_root(self):
         """Returns the root of the Git repo"""
-        return self.get_output("git rev-parse --show-toplevel")[0]
+        output = self.get_output("git rev-parse --show-toplevel")
+        if output is None:
+            return None
+        return output[0]
 
     def get_changes(self, names_only=False, full_paths=False):
         """Returns the Git repo's uncommitted changes (full or names only)"""
@@ -60,7 +64,10 @@ class GitCommand(Command):
 
     def get_total_commits(self):
         """Returns the total number of commits in the repo's history (not counting merges)"""
-        return self.get_output("git rev-list HEAD --count --no-merges")[0]
+        count = self.get_output("git rev-list HEAD --count --no-merges")
+        if count is None:
+            return None
+        return count[0]
 
     def get_stashes(self, names_only=False):
         """Returns the Git repo's local stashes (full or names only)"""
@@ -153,6 +160,9 @@ class GitCommand(Command):
 
     def show_log(self):
         """Displays the commit history in a compact list"""
+        if self.get_total_commits() is None:
+            app.print_warning("No commit history available.")
+            return
         self.run("git log --oneline --graph --name-status")
 
     def show_diff_for_file(self, file):
@@ -163,21 +173,16 @@ class GitCommand(Command):
         """Shows more details for the specified Git commit"""
         self.run(f"git show {commit_hash}")
 
-    def show_stashes_and_changes(self):
+    def show_repo_summary(self):
         """Shows local Git stashes and changes"""
+        print(f"\nREPO: {file_utils.get_path_tail(os.getcwd())}")
+        self.run("git branch")
         self.show_stashes()
         self.show_changes()
 
     def is_inside_git_repo(self):
         """Returns whether the current working directory is inside a git repo"""
-        try:
-            path = self.get_repo_root()
-            if "fatal" in path:
-                raise subprocess.CalledProcessError
-            return True
-        except subprocess.CalledProcessError:
-            return False
-
+        return bool(self.get_repo_root())
 
 class AppCommand(Command):
     """Command class for app-specific commands"""

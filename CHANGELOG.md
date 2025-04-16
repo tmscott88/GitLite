@@ -1,15 +1,21 @@
 # CHANGELOG
 
-## (TBD) 0.8.8
+## (TBD) 0.8.9
 
 - [] Workspace/config profiles (different config file for each repository)
-- [?] Recents menu: Store recents in a JSON file instead of walking the entire directory & subdirectories
-  - [X] Shows most recent files
-- [X] Change browser settings to a minimal settings picker
 - [] Favorites menu?
 - [] Shortcut to search for files within browser
 - [] Interactive Git repo setup?
 - [] Add branches, rebasing, merging?
+
+## 0.8.8
+
+- [X] Recents menu: Store recents in a JSON file instead of walking the entire directory & subdirectories
+- [X] Change browser settings to a minimal settings picker
+- [X] Move "Open Folder" picker to **File** menu
+- [X] Remove confirmation before changing the working directory
+- [X] Fix crash when repo has no commit history
+- [X] Fix crash when navigating **File** menu with "non-Git" working directory
 
 ## 0.8.7
 

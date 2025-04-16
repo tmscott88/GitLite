@@ -19,92 +19,64 @@ class Picker():
     current_index = 0
     current_option = ""
 
-    """Select a commit from git log output. total_entries is optional"""
+    """Select a commit from git log output. To show all entries on one page, set total_entries = -1"""
     def __init__(self, title, populator, total_entries=-1):
         self.title = title
         self.populator = populator
         self.total_entries = int(total_entries)
 
     def show(self):
-        """Initialize the picker (no pagination)"""
-        is_browser_hidden_files = self.app_cfg.is_browser_hidden_files_enabled()
-        is_browser_readonly_mode = self.app_cfg.is_browser_readonly_mode_enabled()
+        """Initialize the picker without pagination (one scrolling page)"""
         options = []
         if self.populator is not None:
             options = self.populator()
             options.insert(0, Option(self.title, enabled=False))
         else:
             options.append(Option(self.title, enabled=False))
-        options.append(Option(f"[View Hidden Files: {is_browser_hidden_files}]"))
-        options.append(Option(f"[Read-Only Mode: {is_browser_readonly_mode}]"))
         options.append(QUIT_OPTION)
         app.clear(delay=0.05)
         # """Display and handle the picker interaction"""
-        option, index = pick(options, quit_keys=QUIT_KEYS)
-        # Return the selected option
-        if index in range (1, len(options) - 3):
-            self.__on_select_file(option)
-            return option
-        # Toggle Hidden Files
-        if index == len(options) - 3:
-            if not is_browser_hidden_files:
-                self.app_cfg.set_browser_hidden_files("on")
-            else:
-                self.app_cfg.set_browser_hidden_files("off")
-            self.show()
-        # Toggle Read-Only Mode
-        elif index == len(options) - 2:
-            if not is_browser_readonly_mode:
-                self.app_cfg.set_browser_readonly_mode("on")
-            else:
-                self.app_cfg.set_browser_readonly_mode("off")
-            self.show()
-        return None
+        option, _ = pick(options, quit_keys=QUIT_KEYS)
+        return option
 
     def show_paginated(self):
         """Initialize the picker"""
         app.clear(delay=0.05)
         options = []
-        start_index = 0
         limit = 20
+        opt_previous = "<-- Prev"
+        opt_next = "Next -->"
         next_index = limit * self.current_index
         # Handle the last pagination forward
         if next_index + limit >= self.total_entries:
             limit = self.total_entries - next_index
         options.append(Option(self.title, enabled=False))
         if self.current_index > 0:
-            start_index = 1
-            options.insert(1, "<-- Prev")
+            options.insert(1, opt_previous)
         if next_index < self.total_entries:
             options.extend(self.populator(index=next_index, limit=limit))
-            options.append("Next -->")
+            options.append(opt_next)
         if limit <= 0:
             options.append(Option("No further entries.", enabled=False))
         options.append(QUIT_OPTION)
-        option, index = pick(options, quit_keys=QUIT_KEYS)
-        # <-- Previous Page
-        if index == start_index:
+        option, _ = pick(options, quit_keys=QUIT_KEYS)
+        # Quit
+        if not option:
+            return
+        # Go Back
+        if option == opt_previous:
             if self.current_index == 0:
                 self.show_paginated()
             else:
                 self.current_index -= 1
                 self.show_paginated()
-        # Next Page -->
-        if index == len(options) - 2 and option.startswith("Next"):
+        # Go Forward
+        elif option == opt_next:
             self.current_index += 1
             self.show_paginated()
-        # Set option
-        if index in range(start_index + 1, len(options) - 2):
+        # Pick Option
+        else:
             self.current_option = option
-
-    def __on_select_file(self, fpath):
-        """Handle the file selection"""
-        if file_utils.is_file(fpath):
-            if self.app_cfg.is_browser_readonly_mode_enabled():
-                self.app_cmd.view_file(fpath)
-            else:
-                editor = self.app_cfg.get_app("editor")
-                self.app_cmd.open_editor(editor, fpath)
 
 class Browser():
     """Browse files and folders"""
@@ -114,9 +86,10 @@ class Browser():
     git_cmd = GitCommand()
     current_path = ""
 
-    def __init__(self, start_path):
+    def __init__(self, start_path, config_mode=False):
         self.start_path = start_path
         self.current_path = start_path
+        self.config_mode = config_mode
 
     def show(self):
         """Display the file browser, starting at start_path (Default=executable root)"""
@@ -127,56 +100,57 @@ class Browser():
         start_index = 0
         options = []
         # Check for read access first
-        if not os.access(self.current_path, os.R_OK):
-            start_index = 1
-            options.append(Option(f"DIR: {self.current_path}", enabled=False))
-            options.append("../")
-            options.append(Option("Read access denied.", enabled=False))
-        else:
-            options = file_utils.get_entries_in_directory(self.current_path,
-                include_hidden=is_browser_hidden_files)
-            # Then get the directory's entries
-            if not options:
+        if not self.config_mode:
+            if not os.access(self.current_path, os.R_OK):
                 start_index = 1
-                options = []
                 options.append(Option(f"DIR: {self.current_path}", enabled=False))
                 options.append("../")
+                options.append(Option("Read access denied.", enabled=False))
             else:
-                options.insert(start_index, Option(f"DIR: {self.current_path}", enabled=False))
-                if not self.__is_at_root_directory(back_path):
+                options = file_utils.get_entries_in_directory(self.current_path,
+                    include_hidden=is_browser_hidden_files)
+                # Then get the directory's entries
+                if not options:
                     start_index = 1
-                    options.insert(start_index, "../")
-            # Add these settings toggles if the path has read access, regardless of empty directory
-            options.append(Option(f"[View Hidden Files: {is_browser_hidden_files}]"))
-            options.append(Option(f"[Read-Only Mode: {is_browser_readonly_mode}]"))
+                    options = []
+                    options.append(Option(f"DIR: {self.current_path}", enabled=False))
+                    options.append("../")
+                else:
+                    options.insert(start_index, Option(f"DIR: {self.current_path}", enabled=False))
+                    if not self.__is_at_root_directory(back_path):
+                        start_index = 1
+                        options.insert(start_index, "../")
+        options.append(f"[View Hidden Files: {is_browser_hidden_files}]")
+        options.append(f"[Read-Only Mode: {is_browser_readonly_mode}]")
         options.append(QUIT_OPTION)
         option, index = pick(options, quit_keys=QUIT_KEYS)
         # Quit
-        if index >= len(options) or index == -1:
+        if not option:
             self.current_path = None
             return
-        # Go Back
-        if index == start_index:
-            if self.__is_at_root_directory(back_path):
-                self.show()
-            else:
-                self.current_path = back_path
-                self.show()
+        if not self.config_mode:
+            # Go Back
+            if index == start_index:
+                if self.__is_at_root_directory(back_path):
+                    self.show()
+                else:
+                    self.current_path = back_path
+                    self.show()
         # Toggle Hidden Files
-        elif index == len(options) - 3:
+        if option.startswith("[View Hidden"):
             if not is_browser_hidden_files:
                 self.app_cfg.set_browser_hidden_files("on")
             else:
                 self.app_cfg.set_browser_hidden_files("off")
             self.show()
         # Toggle Read-Only Mode
-        elif index == len(options) - 2:
+        elif option.startswith("[Read-Only"):
             if not is_browser_readonly_mode:
                 self.app_cfg.set_browser_readonly_mode("on")
             else:
                 self.app_cfg.set_browser_readonly_mode("off")
             self.show()
-        # File or Folder
+        # Open File or Folder
         elif index in range (start_index + 1, len(options) - 3):
             next_path = os.path.join(self.current_path, option)
             self.__on_select_path(next_path, select_folder_only=False)
@@ -215,21 +189,20 @@ class Browser():
         if not os.access(self.current_path, os.R_OK):
             options.append(Option("Read access denied. Please choose a different folder.", enabled=False))
         else:
-            options.append(Option("[Confirm Folder & Quit]"))
+            options.append("[Confirm Folder & Quit]")
         options.append(QUIT_OPTION)
         option, index = pick(options, quit_keys=QUIT_KEYS)
         # Quit
-        if index >= len(options) or index == -1:
-            app.print_info("Cancelled directory change.")
+        if not option:
             self.current_path = None
             return
         # Go Back
-        if index == 1:
+        if option == "../":
             if os.access(back_path, os.R_OK):
                 self.current_path = back_path
                 self.select_directory()
         # Select Folder
-        elif index == len(options) - 2:
+        elif option.startswith("[Confirm"):
             return
         # Next Folder
         elif index in range (1, len(options) - 2):

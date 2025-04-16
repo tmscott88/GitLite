@@ -29,40 +29,41 @@ def main_menu():
     menu.show()
 
 def file_menu():
-    """The file management menu. "New File" => config "editor", "Open..." => config "browser"""
+    """The file management menu"""
     menu = Menu("File")
     menu.add_option(1, "Back to Main Menu", main_menu)
     menu.add_option(2, "New File", __open_new_file)
-    menu.add_option(3, "Open...", functools.partial(__open_app, "browser"))
-    menu.add_option(4, "Open Recent", recent_files_menu)
+    menu.add_option(3, "Open File", functools.partial(__open_app, "browser"))
+    menu.add_option(4, "Open Folder", prompts.prompt_select_folder)
+    menu.add_option(5, "Open Recent", recent_files_menu)
     if app_cfg.is_daily_notes_enabled():
         menu.add_option(5, "Open Daily Note", __open_daily_note)
+    print(f"\nDIR: {os.getcwd()}")
     if not git_cmd.is_inside_git_repo():
         menu.show()
     else:
         git_cmd.show_changes()
-        menu.show(post_action=git_cmd.show_changes)
+        menu.show(post_action=git_cmd.show_changes if git_cmd.is_inside_git_repo() else None)
 
 def git_menu():
     """The source control menu. Disabled when the working directory is not within a Git repo."""
     if not git_cmd.is_inside_git_repo():
-        app.print_warning("Source control is disabled.")
+        app.print_warning(f"Source control is disabled. '{os.getcwd()}' is not a Git repository.")
     else:
         menu = Menu("Source Control")
         menu.add_option(1, "Back to Main Menu", main_menu)
         menu.add_option(2, "Git Status", git_cmd.show_status)
         menu.add_option(3, "Git Log", git_cmd.show_log)
-        menu.add_option(4, "Git Diff", diff_menu)
+        menu.add_option(4, "Git Diff", __diff_picker)
         menu.add_option(5, "Git Pull", git_cmd.pull_changes)
         menu.add_option(6, "Git Push", git_cmd.push_changes)
-        menu.add_option(7, "Git Stage", stage_menu)
-        menu.add_option(8, "Commit Changes", prompts.prompt_commit)
-        menu.add_option(9, "Stash Changes", stash_menu)
-        menu.add_option(0, "Revert...", __git_revert_menu)
-        git_cmd.show_stashes_and_changes()
-        menu.show(post_action=git_cmd.show_stashes_and_changes)
+        menu.add_option(7, "Git Stage", git_stage_menu)
+        menu.add_option(0, "Revert...", git_revert_menu)
+        git_cmd.show_repo_summary()
+        menu.show(post_action=git_cmd.show_repo_summary)
 
-def __git_revert_menu():
+def git_revert_menu():
+    """Shows opens to Git Checkout, Clean, or Reset"""
     if not git_cmd.is_inside_git_repo():
         app.print_warning("Source control is disabled.")
     else:
@@ -71,15 +72,31 @@ def __git_revert_menu():
         menu.add_option(2, "Git Checkout (Tracked)", git_cmd.checkout_patch)
         menu.add_option(3, "Git Clean (Untracked)", git_cmd.clean_interactive)
         menu.add_option(4, "Reset to Commit", __commit_picker)
-        git_cmd.show_stashes_and_changes()
-        menu.show(post_action=git_cmd.show_stashes_and_changes)
+        git_cmd.show_repo_summary()
+        menu.show(post_action=git_cmd.show_repo_summary)
+
+def __diff_picker():
+    """Opens a Curses picker menu to select one tracked file."""
+    if not git_cmd.get_diff_options():
+        app.print_warning("No tracked changes to analyze.")
+        return
+    picker = Picker(
+        title="[Tracked Changes]",
+        populator=functools.partial(git_cmd.get_diff_options))
+    diff_file = picker.show()
+    if diff_file:
+        git_cmd.show_diff_for_file(diff_file)
 
 def __commit_picker():
     """Opens a Curses picker menu to select one commit from the Git repo's history."""
+    total_commits = git_cmd.get_total_commits()
+    if total_commits is None:
+        app.print_warning("No commits available to reset to.")
+        return
     picker = Picker(
         title="[Commits]",
         populator=git_cmd.get_commits,
-        total_entries=git_cmd.get_total_commits())
+        total_entries=total_commits)
     picker.show_paginated()
     commit = picker.current_option
     if commit:
@@ -89,31 +106,32 @@ def recent_files_menu():
     """Gives different options for how to view "recent" files."""
     menu = Menu("Open Recent")
     menu.add_option(1, "Back to File Menu", file_menu)
-    menu.add_option(2, "Last Opened",
-        functools.partial(__recent_file_picker, title="[Open Recent]", recents_filter="last_opened"))
-    if git_cmd.is_inside_git_repo():
-        menu.add_option(3, "Git Index",
-            functools.partial(__recent_file_picker, title="[Changes]", recents_filter="git_index"))
+    menu.add_option(2, "Open Recent",
+        functools.partial(__recent_file_picker,
+        title="[Open Recent]",
+        populator=functools.partial(history.read, reverse_for_display=True)))
+    menu.add_option(3, "Git Changes",
+        functools.partial(__recent_file_picker,
+        title="[Git Changes]",
+        is_git=True,
+        populator=functools.partial(git_cmd.get_changes, names_only=True, full_paths=True)))
     menu.show()
 
-def __recent_file_picker(recents_filter="modified", title="[Picker]"):
+def __recent_file_picker(populator, title, is_git=False):
     """Opens a Curses picker menu to select a recently modified file."""
-    match(recents_filter):
-        case "git_index":
-            if not git_cmd.is_inside_git_repo():
-                app.print_warning("Cannot view recent files by git status. Not inside a git repo.")
-            else:
-                picker = Picker(
-                    title=title,
-                    populator=functools.partial(git_cmd.get_changes,
-                    names_only=True, full_paths=True))
-        case "last_opened":
-            picker = Picker(title=title, populator=functools.partial(history.read, reverse_for_display=True))
-        case _:
-            picker = Picker(title=title, populator=functools.partial(history.read, reverse_for_display=True))
-    picker.show()
+    if is_git and not git_cmd.get_changes():
+        app.print_warning("No changes available.")
+        return
+    picker = Picker(
+        title=title,
+        populator=populator)
+    fpath = picker.show()
+    if fpath:
+        if file_utils.is_file(fpath):
+            __open_app("editor", fpath)
 
-def diff_menu():
+
+def git_diff_menu():
     """Shows a list of tracked files to view each individual diff."""
     menu = Menu("View Diff")
     options = git_cmd.get_diff_options()
@@ -127,31 +145,38 @@ def diff_menu():
             i = i + 1
         menu.show()
 
-def stage_menu():
+def git_stage_menu():
     """Shows a list of tracked files. Allows for quick or interactive stage/unstage."""
     if not git_cmd.get_changes():
         app.print_warning("No changes to stage or unstage.")
     else:
-        menu = Menu("Stage")
+        menu = Menu("Git Stage")
         menu.add_option(1, "Back to Git Menu", git_menu)
-        menu.add_option(2, "Stage All", git_cmd.stage_all_changes)
-        menu.add_option(3, "Unstage All", git_cmd.unstage_all_changes)
-        menu.add_option(4, "Interactive Stage", git_cmd.stage_interactive)
+        menu.add_option(2, "Open...",
+            functools.partial(__recent_file_picker,
+            title="[Git Changes]",
+            is_git=True,
+            populator=functools.partial(git_cmd.get_changes, names_only=True, full_paths=True)))
+        menu.add_option(3, "Stage All", git_cmd.stage_all_changes)
+        menu.add_option(4, "Unstage All", git_cmd.unstage_all_changes)
+        menu.add_option(5, "Interactive Stage", git_cmd.stage_interactive)
+        menu.add_option(6, "Commit Changes", prompts.prompt_commit)
+        menu.add_option(7, "Stash Changes", git_stash_menu)
         git_cmd.show_changes()
         menu.show()
 
-def stash_menu():
+def git_stash_menu():
     """Shows a list of stash operations: Create, Apply, Pop, Drop"""
     if not git_cmd.get_changes() and not git_cmd.get_stashes():
         app.print_warning("No changes or stashes available.")
         return
-    menu = Menu("Stash")
-    menu.add_option(1, "Back to Git Menu", git_menu)
+    menu = Menu("Git Stash")
+    menu.add_option(1, "Back to Git Stage Menu", git_stage_menu)
     menu.add_option(2, "Create Stash", create_stash_menu)
     menu.add_option(3, "Apply Stash", functools.partial(__select_stash_menu, "apply"))
     menu.add_option(4, "Pop Stash", functools.partial(__select_stash_menu, "pop"))
     menu.add_option(5, "Drop Stash", functools.partial(__select_stash_menu, "drop"))
-    git_cmd.show_stashes_and_changes()
+    git_cmd.show_repo_summary()
     menu.show()
 
 def __select_stash_menu(operation):
@@ -162,9 +187,9 @@ def __select_stash_menu(operation):
     menu = Menu("Select a Stash")
     options = git_cmd.get_stashes(names_only=True)
     if not options:
-        app.print_warning("No stashes available in this repo.")
+        app.print_warning("No stashes available in this repository.")
         return
-    menu.add_option(1, "Back to Stash Menu", stash_menu)
+    menu.add_option(1, "Back to Stash Menu", git_stash_menu)
     i = 2
     for opt in options:
         menu.add_option(i, opt, functools.partial(__confirm_existing_stash_operation, operation, opt))
@@ -177,18 +202,18 @@ def create_stash_menu():
         app.print_warning("No changes available to stash.")
         return
     menu = Menu("Create Stash")
-    menu.add_option(1, "Back to Stash Menu", stash_menu)
+    menu.add_option(1, "Back to Stash Menu", git_stash_menu)
     menu.add_option(2, "Stash All",
         functools.partial(prompts.prompt_stash_message, include_untracked=True))
     menu.add_option(3, "Stash Staged Only",
         functools.partial(prompts.prompt_stash_message, include_untracked=False))
     git_cmd.show_changes()
-    menu.show(post_action=stash_menu)
+    menu.show(post_action=git_stash_menu)
 
 def __confirm_existing_stash_operation(operation, stash):
     """Shows options to apply, pop, or drop the selected stash."""
     if not git_cmd.get_stashes():
-        app.print_warning("No stashes available in this repo.")
+        app.print_warning("No stashes available in this repository.")
         return
     match(operation):
         case "apply":
@@ -202,8 +227,8 @@ def __confirm_existing_stash_operation(operation, stash):
             return
     menu = Menu(f"{operation.upper()} stash '{stash}'?")
     menu.add_option(1, "Yes", functools.partial(git_cmd.existing_stash_operation, operation, stash))
-    menu.add_option(2, "No", stash_menu)
-    menu.show(post_action=stash_menu)
+    menu.add_option(2, "No", git_stash_menu)
+    menu.show(post_action=git_stash_menu)
 
 def reset_menu(commit):
     """Shows options to soft, mixed, or hard reset to the selected commit."""
@@ -236,10 +261,9 @@ def settings_menu():
     """Shows the app settings menu, each of which modify the GitWriting config file."""
     menu = Menu("Settings")
     menu.add_option(1, "Back to Main Menu", main_menu)
-    menu.add_option(2, "Working Directory", prompts.prompt_select_repo)
-    menu.add_option(3, "Default Apps", __default_apps_menu)
-    menu.add_option(4, "Browser Settings", __browser_settings_picker)
-    menu.add_option(5, "Daily Notes", __daily_notes_menu)
+    menu.add_option(2, "Default Apps", __default_apps_menu)
+    menu.add_option(3, "Browser Settings", __browser_settings)
+    menu.add_option(4, "Daily Notes", __daily_notes_menu)
     menu.add_option(0, "Factory Reset \u26A0",
         __confirm_factory_reset)
     app_cfg.read()
@@ -257,12 +281,12 @@ def __default_apps_menu():
         functools.partial(prompts.set_app, "editor"))
     menu.show(post_action=app_cfg.show)
 
-def __browser_settings_picker():
+def __browser_settings():
     """Shows a minimal picker to set the internal browser settings"""
-    picker = Picker(
-        title="[Browser Settings]",
-        populator=None)
-    picker.show()
+    browser = Browser(
+        start_path="",
+        config_mode=True)
+    browser.show()
 
 def __daily_notes_menu():
     """Shows the sub-menu to set daily notes settings"""
