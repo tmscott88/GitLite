@@ -84,7 +84,7 @@ def prompt_commit():
 def prompt_stash_message(include_untracked=False):
     """Prompt for a message to create a new stash"""
     if not include_untracked and not git_cmd.get_staged_changes():
-        app.print_warning("No staged changes to stash. Please stash all changes or stage changes first.")
+        app.print_warning("No staged changes to stash. Please stash all changes or stage some changes first.")
     else:
         message = input("Enter stash message (or pass empty message to cancel): ")
         if message:

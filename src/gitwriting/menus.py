@@ -54,11 +54,12 @@ def git_menu():
         menu.add_option(1, "Back to Main Menu", main_menu)
         menu.add_option(2, "Git Status", git_cmd.show_status)
         menu.add_option(3, "Git Log", git_cmd.show_log)
-        menu.add_option(4, "Git Diff", __diff_picker)
+        menu.add_option(4, "Git Diff...", __diff_picker)
         menu.add_option(5, "Git Pull", git_cmd.pull_changes)
         menu.add_option(6, "Git Push", git_cmd.push_changes)
         menu.add_option(7, "Git Stage", git_stage_menu)
-        menu.add_option(0, "Revert...", git_revert_menu)
+        menu.add_option(8, "Switch Branch", __branch_picker)
+        menu.add_option(9, "Revert...", git_revert_menu)
         git_cmd.show_repo_summary()
         menu.show(post_action=git_cmd.show_repo_summary)
 
@@ -74,6 +75,20 @@ def git_revert_menu():
         menu.add_option(4, "Reset to Commit", __commit_picker)
         git_cmd.show_repo_summary()
         menu.show(post_action=git_cmd.show_repo_summary)
+
+def __branch_picker():
+    """Opens a Curses picker menu to select and change the active branch."""
+    if git_cmd.get_changes():
+        app.print_warning("Cannot safely switch branches. Please commit, stash, or clean all changes first.")
+        return
+    branch_index = git_cmd.get_branch_index() + 1
+    picker = Picker(
+        title="[Branches]",
+        default_index=branch_index,
+        populator=functools.partial(git_cmd.get_branches, remove_indicator=True))
+    branch = picker.show()
+    if branch:
+        git_cmd.switch_branch(branch)
 
 def __diff_picker():
     """Opens a Curses picker menu to select one tracked file."""
@@ -182,7 +197,7 @@ def git_stash_menu():
 def __select_stash_menu(operation):
     """Shows a list of stashes in the local history. Proceeds with the stash operation."""
     if operation in ("apply", "pop") and git_cmd.get_changes():
-        app.print_warning("Cannot safely apply a stash. Please commit, stash, or clean changes first.")
+        app.print_warning("Cannot safely apply a stash. Please commit, stash, or clean all changes first.")
         return
     menu = Menu("Select a Stash")
     options = git_cmd.get_stashes(names_only=True)

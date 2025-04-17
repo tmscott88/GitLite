@@ -38,7 +38,7 @@ class Command:
         return None
 
 class GitCommand(Command):
-    """Runs git commands"""
+    """Runs Git commands"""
     def get_repo_root(self):
         """Returns the root of the Git repo"""
         output = self.get_output("git rev-parse --show-toplevel")
@@ -46,8 +46,28 @@ class GitCommand(Command):
             return None
         return output[0]
 
+    def get_branch(self):
+        """Returns the current branch."""
+        return self.get_output("git rev-parse --abbrev-ref HEAD")[0]
+
+    def get_branch_index(self):
+        """Returns the current branch's index (relative to other branches)."""
+        branches = self.get_branches()
+        for i, b in enumerate(branches):
+            if "*" in b:
+                return i
+        return None
+
+    def get_branches(self, remove_indicator=False):
+        """Returns the list of branches, with the current branch marked."""
+        branches = self.get_output("git branch")
+        if not remove_indicator:
+            return branches
+        return [b.replace("*", "").strip() for b in branches]
+
     def get_changes(self, names_only=False, full_paths=False):
-        """Returns the Git repo's uncommitted changes (full or names only)"""
+        """Returns the Git repo's uncommitted changes 
+        (names_only removes the status icon, full_paths returns the absolute path)"""
         changes = self.get_output("git status -s -u")
         if changes and names_only:
             if full_paths:
@@ -141,6 +161,10 @@ class GitCommand(Command):
         """Opens Git's interactive cleaning menu"""
         self.run(f"git reset --{reset_type} {commit}")
 
+    def switch_branch(self, branch):
+        """Attempts to switch the Git branch"""
+        self.run(f"git switch {branch}")
+
     def show_changes(self):
         """Displays all local changes in a compact list"""
         if self.get_changes():
@@ -176,7 +200,7 @@ class GitCommand(Command):
     def show_repo_summary(self):
         """Shows local Git stashes and changes"""
         print(f"\nREPO: {file_utils.get_path_tail(os.getcwd())}")
-        self.run("git branch")
+        print(f"Branch: {self.get_branch()}")
         self.show_stashes()
         self.show_changes()
 

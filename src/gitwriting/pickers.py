@@ -20,10 +20,11 @@ class Picker():
     current_option = ""
 
     """Select a commit from git log output. To show all entries on one page, set total_entries = -1"""
-    def __init__(self, title, populator, total_entries=-1):
+    def __init__(self, title, populator, total_entries=-1, default_index=0):
         self.title = title
         self.populator = populator
         self.total_entries = int(total_entries)
+        self.default_index = default_index
 
     def show(self):
         """Initialize the picker without pagination (one scrolling page)"""
@@ -36,7 +37,7 @@ class Picker():
         options.append(QUIT_OPTION)
         app.clear(delay=0.05)
         # """Display and handle the picker interaction"""
-        option, _ = pick(options, quit_keys=QUIT_KEYS)
+        option, _ = pick(options, quit_keys=QUIT_KEYS, default_index=self.default_index)
         return option
 
     def show_paginated(self):
