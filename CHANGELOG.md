@@ -11,7 +11,7 @@
 ## 0.8.8
 
 - [X] Add branch picker
-- [?] Rework picker options: toggle by key shortcuts
+- [X] Rework picker options: toggle by key shortcuts
 - [X] Recents menu: Store recents in a JSON file instead of walking the entire directory & subdirectories
 - [X] Change browser settings to a minimal settings picker
 - [X] Move "Open Folder" picker to **File** menu
@@ -19,6 +19,7 @@
 - [X] Remove development/debug options (view app dependencies, view app config template)
 - [X] Fix crash when repo has no commit history
 - [X] Fix crash when navigating **File** menu with "non-Git" working directory
+- [X] Fix browser and file creation path handling
 
 ## 0.8.7
 

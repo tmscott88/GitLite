@@ -1,5 +1,4 @@
 """Contains the interactive menus"""
-import os
 import sys
 import functools
 from shutil import which
@@ -335,17 +334,16 @@ def __open_app(app_type, fpath=""):
     if app_type == "browser" and app_name == "default":
         __open_default_browser()
         return
-    try:
-        if (which(app_name)) is None:
-            raise FileNotFoundError
-        match(app_type):
-            case "browser":
-                app_cmd.open_browser(app_name)
-            case "editor":
-                app_cmd.open_editor(app_name, fpath)
-    except FileNotFoundError:
+    if (which(app_name)) is None:
         app.show_app_not_found_error(app_name)
         __open_system_app(app_type, fpath)
+        return
+    match(app_type):
+        case "browser":
+            app_cmd.open_browser(app_name)
+        case "editor":
+            app_cmd.open_editor(app_name, fpath)
+
 
 def __open_system_app(app_type, fpath=""):
     """Opens the default app for a specified app (if supported)."""
@@ -367,19 +365,21 @@ def __open_default_browser():
 def __open_new_file():
     """Prompt new file. If the file already exists, opens the file in the defined editor."""
     path = input("Enter new file name (or pass empty name to cancel): ")
-    abs_path = file_utils.get_absolute_path(path)
-    if not path:
+    fpath = path.replace(' ', '')
+    abs_path = file_utils.get_absolute_path(fpath)
+    if not abs_path:
         app.print_error("Canceled operation.")
     else:
         if file_utils.is_file(abs_path):
             __open_app("editor", abs_path)
         else:
-            file_utils.create_new_file(abs_path)
+            try:
+                file_utils.create_new_file(abs_path)
+            except FileExistsError:
+                return
             # Only open editor if file was created properly from the previous step
             if file_utils.is_file(abs_path):
                 __open_app("editor", abs_path)
-            else:
-                app.print_error(f"Failed to create or find file '{abs_path}'")
 
 def __open_daily_note():
     """If Daily Notes features is enabled, creates and/or opens today's note at a generated path."""
@@ -387,8 +387,9 @@ def __open_daily_note():
         print("\nDaily Notes disabled. See Main Menu -> Settings to enable this feature.")
     else:
         fpath = app_cfg.get_today_note_path()
-        file_utils.create_new_file(os.path.abspath(fpath))
-        __open_app("editor", os.path.abspath(fpath))
+        file_utils.create_new_file(fpath)
+        if file_utils.is_file(fpath):
+            __open_app("editor", fpath)
 
 def __set_daily_notes_status(new_status):
     """Helper function to enable or disable the Daily Notes feature."""

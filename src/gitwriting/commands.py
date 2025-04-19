@@ -2,7 +2,6 @@
 import os
 import subprocess
 import app_utils as app
-import file_utils
 import history
 
 class Command:
@@ -44,6 +43,10 @@ class GitCommand(Command):
         output = self.get_output("git rev-parse --show-toplevel")
         if output is None:
             return None
+        try:
+            return os.path.normpath(output[0])
+        except OSError as e:
+            app.print_error(f"Error while retreiving Git repo path. {e}")
         return output[0]
 
     def get_branch(self):
@@ -201,14 +204,10 @@ class GitCommand(Command):
         """Shows local Git stashes and changes"""
         repo = self.get_repo_root()
         branch = self.get_branch()
-        print(f"\nREPO: {file_utils.get_path_tail(repo)}")
+        print(f"\nREPO: {os.path.basename(repo)}")
         print(f"Branch: {branch}")
         self.show_stashes()
         self.show_changes()
-
-    def is_inside_git_repo(self):
-        """Returns whether the current working directory is inside a git repo"""
-        return bool(self.get_repo_root())
 
 class AppCommand(Command):
     """Command class for app-specific commands"""

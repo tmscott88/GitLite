@@ -111,8 +111,9 @@ class FileBrowser():
         """Display the file browser, starting at start_path (Default=executable root)"""
         app.clear(delay=0.05)
         is_browser_hidden_files = self.app_cfg.is_browser_hidden_files_enabled()
-        back_path = file_utils.get_path_head(self.current_path)
+        back_path = os.path.dirname(self.current_path)
         options = []
+        first_opt_index = 1
         # Check for read access first
         if not os.access(self.current_path, os.R_OK):
             options.append(Option(f"DIR: {self.current_path}", enabled=False))
@@ -128,9 +129,12 @@ class FileBrowser():
             else:
                 if not self.__is_at_root_directory(back_path):
                     options.insert(0, self.back_option)
+                else:
+                    first_opt_index = 0
         option, key_code = pick(options,
             title=f"DIR: {self.current_path}",
             footer=self.help_option_full,
+            default_index=first_opt_index,
             option_keys=self.OPTION_KEYS,
             quit_keys=QUIT_KEYS, is_paginated=False)
         # Quit
@@ -138,7 +142,7 @@ class FileBrowser():
             self.current_path = None
             return
         # Go Back
-        if option[1] == 0 and key_code != ord('h'):
+        if option[0] == self.back_option and key_code != ord('h'):
             if self.__is_at_root_directory(back_path):
                 self.show()
             else:
@@ -152,8 +156,8 @@ class FileBrowser():
             self.show()
         # Open File or Folder
         elif (key_code in CONFIRM_KEYS or key_code == ord('v')):
-            if option[0] and option[1] != 0 and key_code:
-                next_path = os.path.join(self.current_path, option[0])
+            if option[0] and option[1] >= first_opt_index and key_code:
+                next_path = os.path.normpath(os.path.join(self.current_path, option[0]))
                 self.__on_select_path(key_code, next_path, select_folder_only=False)
 
     def __is_at_root_directory(self, pending_path):
@@ -180,7 +184,7 @@ class FileBrowser():
         """Display the file browser, starting at the specified path (Default=executable root). 
             (DIRECTORIES ONLY)"""
         app.clear(delay=0.05)
-        back_path = file_utils.get_path_head(self.current_path)
+        back_path = os.path.dirname(self.current_path)
         options = file_utils.get_folders_in_directory(self.current_path, include_hidden=False)
         if not options:
             options = []
@@ -206,10 +210,9 @@ class FileBrowser():
                 self.current_path = back_path
                 self.select_directory()
         # Select Folder
-        elif option[1] == len(option):
+        elif option[1] == len(options):
             return
         # Next Folder
-        elif option[1] in range (1, len(options) - 1):
-            next_path = os.path.join(self.current_path, option[0])
-            if os.access(next_path, os.R_OK):
-                self.__on_select_path(option, next_path, select_folder_only=True)
+        elif option[0] and option[1] in range(1, len(options) - 1):
+            next_path = os.path.normpath(os.path.join(self.current_path, option[0]))
+            self.__on_select_path(option, next_path, select_folder_only=True)

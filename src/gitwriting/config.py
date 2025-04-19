@@ -85,7 +85,7 @@ class Config:
     def show(self):
         """Displays the config file, section by section"""
         try:
-            app.print_success(f"Config: {self._path}")
+            print(f"\nConfig: {os.path.basename(self._path)}")
             for section in self.parser.sections():
                 print()
                 print(f"[{section}]")
@@ -145,7 +145,7 @@ class AppConfig(Config):
         date_arr = now.split("-")
         year_month = f"{date_arr[0]}-{date_arr[1]}"
         note_filename = f"{date_arr[0]}-{date_arr[1]}-{date_arr[2]}.md"
-        full_note_path = os.path.join(root, date_arr[0], year_month, note_filename)
+        full_note_path = os.path.abspath(os.path.join(root, date_arr[0], year_month, note_filename))
         return full_note_path
 
     def is_daily_notes_enabled(self):

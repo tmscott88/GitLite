@@ -2,13 +2,11 @@
 
 > Written in Python 3, **GitWriting** is a command-line app built for writers/editors using Git. I created this app in order to streamline my creative writing and Git workflow into one lightweight app, transitioning away from heavier GUI-based apps like Obsidian, VSCode, etc. Spend more time writing and less time typing commands.
 >
-> Builds are available for Windows and Linux, with a macOS build in the works. If using macOS, you may download the `GitWriting` binary and execute that instead from `Terminal`. See below for how to install and use this app.
+> Builds are available for Windows and Unix. See below for how to install and use this app.
 
 ***BIG DISCLAIMER**: THIS APP IS STILL UNDER DEVELOPMENT! Right now, **GitWriting** works best with personal, linear, one-branch projects. More advanced Git operations like merging, rebasing, and merge conflict resolution are not implemented at this time.*
 
 ## Requirements
-
-GitWriting supports most modern Linux distributions, macOS, and Windows 11/10/7. However, you may experience unexpected issues on older operating systems which may not support the dependencies below. GitWriting does not currently handle Git authentication or create Git repositories for you, though I am open to adding a feature like that, if the need arises.
 
 - Git (configured and authenticated)
 - A valid Git repository
@@ -19,8 +17,6 @@ GitWriting supports most modern Linux distributions, macOS, and Windows 11/10/7.
 - Download the **GitWriting** executable for your platform `GitWriting.exe` for Windows, `GitWriting`. I would recommend placing it inside your system's apps folder or a similar directory.
 - Run: `GitWriting.exe | ./GitWriting [-OPTION]`
 - Options: `[-h | --help | -H]` `[-o | --options | -O]` `[-v | --version | -V]`
-
-**GitWriting** works on Windows and Unix.
 
 ## Features
 
@@ -72,6 +68,6 @@ Inspired by Obsidian, Daily Notes allow you to quickly create a diary within you
 
 *Note: The config file, `gitwriting.ini`, is automatically generated in your system's user config folder. Here are sample files by platform for your reference.*
 
-- Windows: C:\Users\"User"\AppData\Local\GitWriting\gitwriting.ini
-- Mac: /Users/"user"/Library/Application Support/GitWriting/gitwriting.ini
-- Linux: /home/"user"/.config/GitWriting/gitwriting.ini
+- Windows: C:\Users\USER\AppData\Local\GitWriting\gitwriting.ini
+- Mac: /Users/USER/Library/Application Support/GitWriting/gitwriting.ini
+- Linux: /home/USER/.config/GitWriting/gitwriting.ini

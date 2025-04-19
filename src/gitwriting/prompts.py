@@ -107,10 +107,15 @@ def prompt_stash_message(include_untracked=False):
 
 def set_daily_notes_path():
     """Prompts to set a new Daily Notes path in the config file"""
-    new_path = input("Set new Daily Notes path (or pass empty path to cancel): ")
-    if new_path:
-        file_utils.create_new_directory(new_path)
-        app_cfg.set_daily_notes_path(new_path)
+    path = input("Set new Daily Notes path (or pass empty path to cancel): ")
+    fpath = path.replace(' ', '')
+    abs_path = file_utils.get_absolute_path(fpath)
+    if abs_path:
+        try:
+            file_utils.create_new_directory(abs_path)
+            app_cfg.set_daily_notes_path(abs_path)
+        except FileExistsError:
+            return
     else:
         app.print_error(f"Canceled. Keep current path: '{app_cfg.get_daily_notes_root_path()}'")
 
