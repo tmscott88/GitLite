@@ -153,7 +153,7 @@ class FileBrowser():
         # Open File or Folder
         elif (key_code in CONFIRM_KEYS or key_code == ord('v')):
             if option[0] and option[1] != 0 and key_code:
-                next_path = os.path.join(self.current_path, option[0])
+                next_path = file_utils.get_standard_path(os.path.join(self.current_path, option[0]))
                 self.__on_select_path(key_code, next_path, select_folder_only=False)
 
     def __is_at_root_directory(self, pending_path):
@@ -210,6 +210,6 @@ class FileBrowser():
             return
         # Next Folder
         elif option[1] in range (1, len(options) - 1):
-            next_path = os.path.join(self.current_path, option[0])
+            next_path = file_utils.get_standard_path(os.path.join(self.current_path, option[0]))
             if os.access(next_path, os.R_OK):
                 self.__on_select_path(option, next_path, select_folder_only=True)
