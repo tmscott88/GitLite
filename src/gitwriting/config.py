@@ -22,7 +22,7 @@ class Config:
                 self.parser.read_file(f)
         except FileNotFoundError:
             if not self.quiet:
-                app.print_warning(f"Could not find a valid config file in '{os.getcwd()}'.")
+                app.print_warning(f"Could not find a valid config file at '{self._path}'.")
             raise
         except configparser.Error as e:
             if not self.quiet:
@@ -106,8 +106,11 @@ class AppConfig(Config):
         """Generate a new config file if it doesn't exist already"""
         git_cmd = GitCommand()
         try:
-            # Default working dir to system "Home" folder
+            # Default new working dir to system "Home" folder as a starting point
             working_dir = os.path.expanduser("~")
+            # If the actual working dir is inside a Git repo
+            # (the app is run within a Git repo)
+            # Set the new working dir to the repo root
             if git_cmd.get_repo_root():
                 working_dir = git_cmd.get_repo_root()
             if app.platform_is_windows():
