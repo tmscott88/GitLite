@@ -113,19 +113,20 @@ class AppConfig(Config):
             # Set the new working dir to the repo root
             if git_cmd.get_repo_root():
                 working_dir = git_cmd.get_repo_root()
+            daily_notes = os.path.join(working_dir, "daily")
             if app.platform_is_windows():
                 # Default to system "home" directory
                 self.parser['PATHS'] = {
                     'working_directory': working_dir,
                     'editor': 'notepad.exe',
                     'browser': 'default',
-                    'daily_notes': 'daily'}
+                    'daily_notes': daily_notes}
             elif app.platform_is_unix():
                 self.parser['PATHS'] = {
                     'working_directory': working_dir,
                     'editor': 'nano',
                     'browser': 'default',
-                    'daily_notes': 'daily'}
+                    'daily_notes': daily_notes}
             self.parser['FLAGS'] = {
                 'browser_hidden_files': 'off',
                 'daily_notes': 'off'}
