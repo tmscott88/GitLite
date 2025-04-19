@@ -11,14 +11,6 @@ def get_absolute_path(rel_path):
     """Returns the absolute path of a relative path, starting at the working directory"""
     return os.path.abspath(rel_path)
 
-def get_relative_path(abs_path):
-    """Converts an absolute path to a relative path, starting at the working directory"""
-    try:
-        return os.path.relpath(abs_path, start=os.getcwd())
-    except ValueError as e:
-        app.print_error(f"Could not convert '{abs_path}' to a relative path. {e}")
-    return None
-
 def get_entries_in_directory(path, include_hidden=False):
     """(Python 3.5+) Return a list of DirEntry object names,
         each corresponding to the entries in the specified directory."""
