@@ -11,7 +11,7 @@ from config import AppConfig
 from commands import AppCommand, GitCommand
 from menu import Menu
 import prompts
-from pickers import Browser, Picker
+from pickers import FileBrowser, DataPicker
 
 app_cmd = AppCommand()
 git_cmd = GitCommand()
@@ -37,17 +37,17 @@ def file_menu():
     menu.add_option(4, "Open Folder", prompts.prompt_select_folder)
     menu.add_option(5, "Open Recent", recent_files_menu)
     if app_cfg.is_daily_notes_enabled():
-        menu.add_option(5, "Open Daily Note", __open_daily_note)
+        menu.add_option(6, "Open Daily Note", __open_daily_note)
     print(f"\nDIR: {os.getcwd()}")
-    if not git_cmd.is_inside_git_repo():
+    if not git_cmd.get_repo_root():
         menu.show()
     else:
         git_cmd.show_changes()
-        menu.show(post_action=git_cmd.show_changes if git_cmd.is_inside_git_repo() else None)
+        menu.show(post_action=git_cmd.show_changes if git_cmd.get_repo_root() else None)
 
 def git_menu():
     """The source control menu. Disabled when the working directory is not within a Git repo."""
-    if not git_cmd.is_inside_git_repo():
+    if not git_cmd.get_repo_root():
         app.print_warning(f"Source control is disabled. '{os.getcwd()}' is not a Git repository.")
     else:
         menu = Menu("Source Control")
@@ -65,7 +65,7 @@ def git_menu():
 
 def git_revert_menu():
     """Shows opens to Git Checkout, Clean, or Reset"""
-    if not git_cmd.is_inside_git_repo():
+    if not git_cmd.get_repo_root():
         app.print_warning("Source control is disabled.")
     else:
         menu = Menu("Revert")
@@ -79,10 +79,11 @@ def git_revert_menu():
 def __branch_picker():
     """Opens a Curses picker menu to select and change the active branch."""
     if git_cmd.get_changes():
-        app.print_warning("Cannot safely switch branches. Please commit, stash, or clean all changes first.")
+        app.print_warning("Cannot safely switch branches. "
+            "Please commit, stash, or clean all changes first.")
         return
-    branch_index = git_cmd.get_branch_index() + 1
-    picker = Picker(
+    branch_index = git_cmd.get_branch_index()
+    picker = DataPicker(
         title="[Branches]",
         default_index=branch_index,
         populator=functools.partial(git_cmd.get_branches, remove_indicator=True))
@@ -95,8 +96,8 @@ def __diff_picker():
     if not git_cmd.get_diff_options():
         app.print_warning("No tracked changes to analyze.")
         return
-    picker = Picker(
-        title="[Tracked Changes]",
+    picker = DataPicker(
+        title="[Git Diff]",
         populator=functools.partial(git_cmd.get_diff_options))
     diff_file = picker.show()
     if diff_file:
@@ -108,8 +109,8 @@ def __commit_picker():
     if total_commits is None:
         app.print_warning("No commits available to reset to.")
         return
-    picker = Picker(
-        title="[Commits]",
+    picker = DataPicker(
+        title="[Git Commits]",
         populator=git_cmd.get_commits,
         total_entries=total_commits)
     picker.show_paginated()
@@ -137,7 +138,7 @@ def __recent_file_picker(populator, title, is_git=False):
     if is_git and not git_cmd.get_changes():
         app.print_warning("No changes available.")
         return
-    picker = Picker(
+    picker = DataPicker(
         title=title,
         populator=populator)
     fpath = picker.show()
@@ -197,7 +198,8 @@ def git_stash_menu():
 def __select_stash_menu(operation):
     """Shows a list of stashes in the local history. Proceeds with the stash operation."""
     if operation in ("apply", "pop") and git_cmd.get_changes():
-        app.print_warning("Cannot safely apply a stash. Please commit, stash, or clean all changes first.")
+        app.print_warning("Cannot safely apply a stash. "
+            "Please commit, stash, or clean all changes first.")
         return
     menu = Menu("Select a Stash")
     options = git_cmd.get_stashes(names_only=True)
@@ -207,7 +209,9 @@ def __select_stash_menu(operation):
     menu.add_option(1, "Back to Stash Menu", git_stash_menu)
     i = 2
     for opt in options:
-        menu.add_option(i, opt, functools.partial(__confirm_existing_stash_operation, operation, opt))
+        menu.add_option(i,
+            opt,
+            functools.partial(__confirm_existing_stash_operation, operation, opt))
         i = i + 1
     menu.show()
 
@@ -267,6 +271,7 @@ def __confirm_reset(reset_type, commit):
 def __confirm_factory_reset():
     """Shows Yes/No menu whether to remove the GitWriting config file."""
     app.print_warning("Factory reset GitWriting?")
+    app.print_warning("This will delete all user-defined settings and restore the app to its default state.")
     menu = Menu("Factory Reset")
     menu.add_option(1, "Yes", app_cfg.factory_reset)
     menu.add_option(2, "No", settings_menu)
@@ -277,8 +282,7 @@ def settings_menu():
     menu = Menu("Settings")
     menu.add_option(1, "Back to Main Menu", main_menu)
     menu.add_option(2, "Default Apps", __default_apps_menu)
-    menu.add_option(3, "Browser Settings", __browser_settings)
-    menu.add_option(4, "Daily Notes", __daily_notes_menu)
+    menu.add_option(3, "Daily Notes", __daily_notes_menu)
     menu.add_option(0, "Factory Reset \u26A0",
         __confirm_factory_reset)
     app_cfg.read()
@@ -295,13 +299,6 @@ def __default_apps_menu():
     menu.add_option(3, "Editor",
         functools.partial(prompts.set_app, "editor"))
     menu.show(post_action=app_cfg.show)
-
-def __browser_settings():
-    """Shows a minimal picker to set the internal browser settings"""
-    browser = Browser(
-        start_path="",
-        config_mode=True)
-    browser.show()
 
 def __daily_notes_menu():
     """Shows the sub-menu to set daily notes settings"""
@@ -322,8 +319,6 @@ def help_menu():
     menu.add_option(1, "Back to Main Menu", main_menu)
     menu.add_option(2, "View README", app_cmd.show_readme)
     menu.add_option(3, "View Changelog", app_cmd.show_changelog)
-    menu.add_option(4, "View Config Example", app_cfg.show_config_template)
-    menu.add_option(5, "View App Dependencies", app_cmd.show_requirements)
     menu.show()
 
 def __open_app(app_type, fpath=""):
@@ -361,10 +356,10 @@ def __open_system_app(app_type, fpath=""):
         case _:
             app.print_error(f"App type '{app_type}' is not supported by GitWriting.")
 
-# def default_browser(select_folder_mode=False):
 def __open_default_browser():
-    """As of 0.8.6, this will open the integrated file browser instead of explorer.exe."""
-    browser = Browser(os.getcwd())
+    """Opens the integrated file browser.
+    (Windows) As of GitWriting 0.8.6, this will open the file browser instead of explorer.exe."""
+    browser = FileBrowser(os.getcwd())
     browser.show()
 
 def __open_new_file():
@@ -397,19 +392,5 @@ def __set_daily_notes_status(new_status):
     """Helper function to enable or disable the Daily Notes feature."""
     if new_status in ("on","off"):
         app_cfg.set_daily_notes_status(new_status)
-    else:
-        app.print_error(f"Unexpected status '{new_status}'. Status must be 'on' or 'off'.")
-
-def __set_browser_hidden_files_status(new_status):
-    """Helper function to enable or disable hidden files visibility in the default browser."""
-    if new_status in ("on", "off"):
-        app_cfg.set_browser_hidden_files(new_status)
-    else:
-        app.print_error(f"Unexpected status '{new_status}'. Status must be 'on' or 'off'.")
-
-def __set_browser_readonly_mode_status(new_status):
-    """Helper function to enable or disable read-only mode in the default browser."""
-    if new_status in ("on", "off"):
-        app_cfg.set_browser_readonly_mode(new_status)
     else:
         app.print_error(f"Unexpected status '{new_status}'. Status must be 'on' or 'off'.")

@@ -3,7 +3,8 @@ import os
 import app_utils as app
 
 def get_standard_path(path):
-    """(For Windows) Converts the specified path to a standardized path format with forward slashes instead of backward slashes."""
+    """(For Windows) Converts the specified path to a standardized path format 
+        with forward slashes instead of backward slashes."""
     return path.strip().replace(os.sep, '/')
 
 def get_absolute_path(rel_path):
@@ -74,10 +75,11 @@ def create_new_file(new_path):
         except OSError as e:
             app.print_error(f"Failed to create file '{new_path}'. {e}")
     elif not is_file(new_path) and is_directory(new_path):
-        app.print_error(f"A folder '{new_path}' already exists in this directory. Please create a different file name or directory.")
+        app.print_error(f"A folder '{new_path}' already exists in this directory. "
+            "Please create a different file name or directory.")
 
 def create_new_directory(new_path):
-    """Creates a new directory (and any intermediate directories denoted by the path seperator) if needed."""
+    """Creates a new directory (and any intermediate directories denoted by the path seperator)."""
     if not is_directory(new_path) and not is_file(new_path):
         try:
             os.makedirs(new_path, exist_ok=True)
@@ -86,7 +88,8 @@ def create_new_directory(new_path):
         except FileExistsError as e:
             app.print_error(f"Failed to create directory '{new_path}'. {e}")
     elif not is_directory(new_path) and is_file(new_path):
-        app.print_error(f"A file '{new_path}' already exists in this directory. Please create a different directory name.")
+        app.print_error(f"A file '{new_path}' already exists in this directory. "
+            "Please create a different directory name.")
         raise FileExistsError
 
 def is_file(path):

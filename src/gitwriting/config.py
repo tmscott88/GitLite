@@ -34,9 +34,11 @@ class Config:
         try:
             return self.parser.get(section, option)
         except ValueError:
-            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self._path}'. '{option}' is not a valid boolean.")
+            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self._path}'. "
+                f"'{option}' is not a valid boolean.")
         except configparser.Error as e:
-            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self._path}'. {e}")
+            app.print_error(f"Failed to retrieve ['{section}', '{option}'] "
+                f"from '{self._path}'. {e}")
             app.print_info(f"Please verify that '{self._path}' is setup correctly.")
         return None
 
@@ -45,9 +47,11 @@ class Config:
         try:
             return self.parser.getboolean(section, option)
         except ValueError:
-            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self._path}'. '{option}' is not a valid boolean.")
+            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self._path}'. "
+                f"'{option}' is not a valid boolean.")
         except configparser.Error as e:
-            app.print_error(f"Failed to retrieve ['{section}', '{option}'] from '{self._path}'. {e}")
+            app.print_error(f"Failed to retrieve ['{section}', '{option}'] "
+                f"from '{self._path}'. {e}")
             app.print_info(f"Please verify that '{self._path}' is setup correctly.")
         return None
 
@@ -60,7 +64,8 @@ class Config:
             else:
                 self.save(f"Set ['{section}', '{option}'] = '{value}'")
         except (configparser.NoSectionError, TypeError) as e:
-            app.print_error(f"Failed to set ['{section}', '{option}'] = '{value}' in '{self._path}'. {e}")
+            app.print_error(f"Failed to set ['{section}', '{option}'] = '{value}' "
+                f"in '{self._path}'. {e}")
 
     def save(self, message=""):
         """Writes and saves a value to the config file using configparser"""
@@ -103,7 +108,7 @@ class AppConfig(Config):
         try:
             # Default working dir to system "Home" folder
             working_dir = os.path.expanduser("~")
-            if git_cmd.is_inside_git_repo():
+            if git_cmd.get_repo_root():
                 working_dir = git_cmd.get_repo_root()
             if app.platform_is_windows():
                 # Default to system "home" directory
@@ -120,7 +125,6 @@ class AppConfig(Config):
                     'daily_notes': 'daily'}
             self.parser['FLAGS'] = {
                 'browser_hidden_files': 'off',
-                'browser_readonly_mode': 'off',
                 'daily_notes': 'off'}
             self.save(f"A new config file '{self._path}' was generated with these defaults.")
         except (FileNotFoundError, configparser.Error) as e:
@@ -149,10 +153,6 @@ class AppConfig(Config):
         """Returns whether the default browser should display hidden files"""
         return bool(self.get_browser_hidden_files_status())
 
-    def is_browser_readonly_mode_enabled(self):
-        """Returns whether the default browser should be in read-only mode"""
-        return bool(self.get_browser_readonly_mode_status())
-
     def get_app(self, app_type):
         """Returns the specified app as defined in the config file"""
         return self.get_value('PATHS', app_type)
@@ -168,10 +168,6 @@ class AppConfig(Config):
     def get_browser_hidden_files_status(self):
         """Returns the default browser's hidden files visibility flag in the config file"""
         return self.get_bool('FLAGS', 'browser_hidden_files')
-
-    def get_browser_readonly_mode_status(self):
-        """Returns the default browser's readonly mode flag in the config file"""
-        return self.get_bool('FLAGS', 'browser_readonly_mode')
 
     def get_default_working_directory(self):
         """Returns the default working directory in the config file"""
@@ -193,10 +189,6 @@ class AppConfig(Config):
         """Sets the browser hidden files visiblity flag in the config file"""
         self.set_value('FLAGS', 'browser_hidden_files', new_status)
 
-    def set_browser_readonly_mode(self, new_status):
-        """Sets the browser readonly mode flag in the config file"""
-        self.set_value('FLAGS', 'browser_readonly_mode', new_status)
-
     def set_default_working_directory(self, new_path):
         """Sets the default working directory in the config file"""
         self.set_value('PATHS', 'working_directory', new_path)
@@ -209,29 +201,12 @@ class AppConfig(Config):
         # Defaults to git repo root if it exists
         app.change_working_directory(root)
 
-    def show_config_template(self):
-        """View a working sample config file"""
-        print(f"""
-            Config: {self._path}
-
-            [PATHS]
-            working_directory = {os.getcwd()}
-            editor = {app.get_system_app("editor")}
-            browser = {app.get_system_app("browser")}
-            daily_notes = daily
-
-            [FLAGS]
-            daily_notes = off
-            browser_hidden_files = off
-            browser_readonly_mode = off
-        """)
-
     def factory_reset(self):
         """Deletes the existing config file, returning the app to its default state"""
         try:
             if os.path.exists(self._path):
                 os.remove(self._path)
-                app.print_success(f"Deleted config file '{self._path}'")
+                app.print_success(f"Deleted app config file '{self._path}'")
             else:
                 app.print_info(f"{self._path} not found.")
             app.print_warning(f"{app.APP_NAME} must be restarted in order to continue.")

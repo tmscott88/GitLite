@@ -64,7 +64,7 @@ Inspired by Obsidian, Daily Notes allow you to quickly create a diary within you
 ## Build from Source
 
 - Install [PyInstaller](https://pyinstaller.org/en/stable/) using `pip`. See [here](https://pip.pypa.io/en/stable/installation/) if you do not already have `pip` installed with Python.
-- App dependencies are located in `requirements.txt`. See `Help` within the app to view the dependencies, this `README.md`, and `CHANGELOG.md`.
+- App dependencies are located in `requirements.txt`. See `Help` within the app to view this this `README.md`, and the changelog, `CHANGELOG.md`.
 - Make the build script executable: `chmod +x build.sh`
 - Run the build script: `build.sh`
 

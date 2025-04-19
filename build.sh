@@ -34,7 +34,6 @@ build() {
     pyinstaller --name 'GitWriting' \
                 --icon './src/gitwriting/github.ico' \
                 --onefile  \
-                --add-data='./src/gitwriting/requirements.txt:.' \
                 --add-data='./CHANGELOG.md:.' \
                 --add-data='./README.md:.' \
                 --recursive-copy-metadata 'appdirs' \

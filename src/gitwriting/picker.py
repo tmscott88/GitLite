@@ -1,5 +1,5 @@
 """
-Picker class with some modifications to suit my project 
+Picker class with some modifications to suit my project
 * Forked from aisk/pick: https://github.com/aisk/pick/tree/master/src/pick
 """
 
@@ -7,10 +7,11 @@ import curses
 import textwrap
 from collections import namedtuple
 from dataclasses import dataclass, field
-from typing import Any, Container, Generic, Iterable, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import (Any,
+    Container, Generic, Iterable, List,
+    Optional, Sequence, Tuple, TypeVar, Union)
 
 __all__ = ["Picker", "pick", "Option"]
-
 
 @dataclass
 class Option:
@@ -20,31 +21,35 @@ class Option:
     description: Optional[str] = None
     enabled: bool = True
 
+CONFIRM_KEYS = (curses.KEY_ENTER, ord("\n"), ord("\r"))
+KEYS_UP = (curses.KEY_UP, ord("w"))
+KEYS_DOWN = (curses.KEY_DOWN, ord("s"))
+KEYS_LEFT = (curses.KEY_LEFT, ord("a"))
+KEYS_RIGHT = (curses.KEY_RIGHT, ord("d"))
+KEY_E = (101, ord("e"))
+KEY_H = (104, ord("h"))
+KEY_V = (118, ord("v"))
 
-KEYS_ENTER = (curses.KEY_ENTER, ord("\n"), ord("\r"))
-KEYS_UP = (curses.KEY_UP, ord("k"))
-KEYS_DOWN = (curses.KEY_DOWN, ord("j"))
-KEYS_SELECT = (curses.KEY_RIGHT, ord(" "))
-
-SYMBOL_CIRCLE_FILLED = "(x)"
-SYMBOL_CIRCLE_EMPTY = "( )"
-
-OPTION_T = TypeVar("OPTION_T", str, Option)
-PICK_RETURN_T = Tuple[OPTION_T, int]
+OptionT = TypeVar("OptionT", str, Option)
+# Option, index, char
+PickReturnT = Tuple[OptionT, int, int]
 
 Position = namedtuple('Position', ['y', 'x'])
 
 @dataclass
-class Picker(Generic[OPTION_T]):
+class Picker(Generic[OptionT]):
     """The grande picker class"""
-    options: Sequence[OPTION_T]
+    options: Sequence[OptionT]
     title: Optional[str] = None
+    footer: Optional[str] = None
     indicator: str = "*"
     default_index: int = 0
+    is_paginated: bool = False
     selected_indicies: List[int] = field(init=False, default_factory=list)
     index: int = field(init=False, default=0)
     screen: Optional["curses._CursesWindow"] = None
     position: Position = Position(0, 0)
+    option_keys: Optional[Union[Container[int], Iterable[int]]] = None
     quit_keys: Optional[Union[Container[int], Iterable[int]]] = None
 
     def __post_init__(self) -> None:
@@ -84,14 +89,24 @@ class Picker(Generic[OPTION_T]):
             if not isinstance(option, Option) or option.enabled:
                 break
 
-    def get_selected(self) -> Union[List[PICK_RETURN_T], PICK_RETURN_T]:
+    def get_selected(self) -> Union[List[PickReturnT], PickReturnT, PickReturnT]:
         """return the current selected option as a tuple: (option, index)"""
         return self.options[self.index], self.index
 
     def get_title_lines(self, *, max_width: int = 80) -> List[str]:
         """Get title lines"""
         if self.title:
-            return textwrap.fill(self.title, max_width - 2, drop_whitespace=False).split("\n") + [""]
+            return textwrap.fill(self.title,
+                max_width - 2,
+                drop_whitespace=False).split("\n") + [""]
+        return []
+
+    def get_footer_lines(self, *, max_width: int = 80) -> List[str]:
+        """Get footer lines"""
+        if self.footer:
+            return textwrap.fill(self.footer,
+                max_width - 2,
+                drop_whitespace=False).split("\n") + [""]
         return []
 
     def get_option_lines(self) -> List[str]:
@@ -111,8 +126,9 @@ class Picker(Generic[OPTION_T]):
     def get_lines(self, *, max_width: int = 80) -> Tuple[List[str], int]:
         """Get total lines"""
         title_lines = self.get_title_lines(max_width=max_width)
+        footer_lines = self.get_footer_lines(max_width=max_width)
         option_lines = self.get_option_lines()
-        lines = title_lines + option_lines
+        lines = title_lines + option_lines + [""] + footer_lines
         current_line = self.index + len(title_lines) + 1
         return lines, current_line
 
@@ -159,18 +175,24 @@ class Picker(Generic[OPTION_T]):
 
     def run_loop(
         self, screen: "curses._CursesWindow"
-    ) -> Union[List[PICK_RETURN_T], PICK_RETURN_T]:
+    ) -> Union[List[PickReturnT], PickReturnT, PickReturnT]:
+        """Looping interaction sequence"""
         while True:
             self.draw(screen)
             c = screen.getch()
             if self.quit_keys is not None and c in self.quit_keys:
                 return None, -1
+            if self.option_keys is not None and c in self.option_keys:
+                return self.get_selected(), c
+            if self.is_paginated:
+                if c in KEYS_LEFT or c in KEYS_RIGHT:
+                    return self.get_selected(), c
             if c in KEYS_UP:
                 self.move_up()
             elif c in KEYS_DOWN:
                 self.move_down()
-            elif c in KEYS_ENTER:
-                return self.get_selected()
+            elif c in CONFIRM_KEYS:
+                return self.get_selected(), c
 
     def config_curses(self) -> None:
         """Configure curses"""
@@ -201,22 +223,28 @@ class Picker(Generic[OPTION_T]):
 
 
 def pick(
-    options: Sequence[OPTION_T],
+    options: Sequence[OptionT],
     title: Optional[str] = None,
+    footer: Optional[str] = None,
     indicator: str = "->",
     default_index: int = 0,
+    is_paginated: bool = False,
     screen: Optional["curses._CursesWindow"] = None,
     position: Position = Position(0, 0),
-    quit_keys: Optional[Union[Container[int], Iterable[int]]] = None,
+    option_keys: Optional[Union[Container[int], Iterable[int]]] = None,
+    quit_keys: Optional[Union[Container[int], Iterable[int]]] = None
 ):
     """Define picker attributes"""
     picker: Picker = Picker(
         options,
         title,
+        footer,
         indicator,
         default_index,
+        is_paginated,
         screen,
         position,
-        quit_keys,
+        option_keys,
+        quit_keys
     )
     return picker.start()

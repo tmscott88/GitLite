@@ -43,7 +43,7 @@ def get_system_app(app_type):
             print_error(f"App type '{app_type}' is not supported.")
 
 def get_user_config_resource_path(fname):
-    """Returns the absolute path to a resource (if the resource exists in the user config directory)"""
+    """Returns the absolute path to a user config resource, if it exists"""
     return os.path.join(
         appdirs.user_config_dir(appname=APP_NAME, appauthor=False), fname)
 
@@ -57,7 +57,8 @@ def get_python_resource_path(relative_path):
     except AttributeError:
         print_error(f"Could not find an app resource path for '{relative_path}'.")
         print_warning(f"This feature is unavailable when running {APP_NAME} from source.")
-        print_warning(f"Please build the app using PyInstaller (See README) or download the latest release from: {PROJECT_URL}.")
+        print_warning("Please build the app using PyInstaller "
+        f"(See README) or download and use the latest release from: {PROJECT_URL}.")
     return None
 
 def platform_is_windows():
@@ -120,7 +121,8 @@ def show_splash(verbose=False):
 def show_app_not_found_error(name):
     """Prints an error that the specified app was not found"""
     print_error(f"App '{name}' not found.")
-    print_warning("Ensure that the app's name is defined correctly and installed systemwide.\n", new_line=False)
+    print_warning("Ensure that the app's name is defined correctly and installed systemwide.\n",
+        new_line=False)
 
 # symbols = {
 #     "error": "\u274C",

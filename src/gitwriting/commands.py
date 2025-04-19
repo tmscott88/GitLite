@@ -199,8 +199,10 @@ class GitCommand(Command):
 
     def show_repo_summary(self):
         """Shows local Git stashes and changes"""
-        print(f"\nREPO: {file_utils.get_path_tail(os.getcwd())}")
-        print(f"Branch: {self.get_branch()}")
+        repo = self.get_repo_root()
+        branch = self.get_branch()
+        print(f"\nREPO: {file_utils.get_path_tail(repo)}")
+        print(f"Branch: {branch}")
         self.show_stashes()
         self.show_changes()
 
@@ -237,11 +239,5 @@ class AppCommand(Command):
     def show_readme(self):
         """Fetches the app's README path"""
         path = app.get_python_resource_path("README.md")
-        if path:
-            self.view_file(path)
-
-    def show_requirements(self):
-        """Fetches the app's Python requirements (dependencies) path"""
-        path = app.get_python_resource_path("requirements.txt")
         if path:
             self.view_file(path)

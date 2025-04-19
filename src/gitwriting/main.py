@@ -35,7 +35,7 @@ def main():
     except (FileNotFoundError, OSError):
         prompts.prompt_create_config()
     # Set working directory to the root of the Git repo (if applicable)
-    if git_cmd.is_inside_git_repo():
+    if git_cmd.get_repo_root():
         app_cfg.set_working_directory_to_repo()
     menus.main_menu()
 
@@ -43,10 +43,9 @@ def main():
 def __handle_launch_args():
     """Handle launch arguments when the app is launched"""
     options_desc = "[Options] \nHelp: [-h | --help | -H] \
-        \nSetup/View Config: [-c | --config | -C]  \
+        \nSetup|View Config: [-c | --config | -C]  \
         \nVersion: [-v | --version | -V],  \
-        \nView README: [-r | --readme | -R] \
-        \nView App Dependencies: [-d | --dependencies | -D]"
+        \nView README: [-r | --readme | -R]"
     usage_desc = f"\n[Usage] \n./{os.path.basename(__file__)} [OPTION]\n"
 
     option = sys.argv[1]
@@ -65,8 +64,6 @@ def __handle_launch_args():
         app.print_version()
     elif option in ("-r", "--readme", "-R"):
         app_cmd.show_readme()
-    elif option in ("-d", "--dependencies", "-D"):
-        app_cmd.show_requirements()
     else:
         app.print_error(f"Unknown Option: {option}")
         print(usage_desc)
