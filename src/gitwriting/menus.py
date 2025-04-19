@@ -38,7 +38,7 @@ def file_menu():
     menu.add_option(5, "Open Recent", recent_files_menu)
     if app_cfg.is_daily_notes_enabled():
         menu.add_option(6, "Open Daily Note", __open_daily_note)
-    print(f"\nDIR: {os.getcwd()}")
+    print(f"\nDIR: {app_cfg.get_default_working_directory()}")
     if not git_cmd.get_repo_root():
         menu.show()
     else:
@@ -48,7 +48,8 @@ def file_menu():
 def git_menu():
     """The source control menu. Disabled when the working directory is not within a Git repo."""
     if not git_cmd.get_repo_root():
-        app.print_warning(f"Source control is disabled. '{os.getcwd()}' is not a Git repository.")
+        app.print_warning(f"Source control is disabled. "
+            f"'{app_cfg.get_default_working_directory()}' is not a Git repository.")
     else:
         menu = Menu("Source Control")
         menu.add_option(1, "Back to Main Menu", main_menu)
@@ -271,7 +272,8 @@ def __confirm_reset(reset_type, commit):
 def __confirm_factory_reset():
     """Shows Yes/No menu whether to remove the GitWriting config file."""
     app.print_warning("Factory reset GitWriting?")
-    app.print_warning("This will delete all user-defined settings and restore the app to its default state.")
+    app.print_warning("This will delete all user-defined settings "
+        "and restore the app to its default state.")
     menu = Menu("Factory Reset")
     menu.add_option(1, "Yes", app_cfg.factory_reset)
     menu.add_option(2, "No", settings_menu)
@@ -359,7 +361,7 @@ def __open_system_app(app_type, fpath=""):
 def __open_default_browser():
     """Opens the integrated file browser.
     (Windows) As of GitWriting 0.8.6, this will open the file browser instead of explorer.exe."""
-    browser = FileBrowser(os.getcwd())
+    browser = FileBrowser(app_cfg.get_default_working_directory())
     browser.show()
 
 def __open_new_file():

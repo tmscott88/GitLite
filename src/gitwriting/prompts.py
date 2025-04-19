@@ -1,5 +1,4 @@
 """Contains various user-facing input prompts"""
-import os
 import sys
 from shutil import which
 
@@ -65,7 +64,7 @@ def prompt_select_folder():
     """Select a folder (working directory) using a directory picker.
         Raises prompt if the selected directory is not within a Git repo"""
     try:
-        browser = FileBrowser(os.getcwd())
+        browser = FileBrowser(app_cfg.get_default_working_directory())
         browser.select_directory()
         new_path = browser.current_path
         # If the browser was quit, don't change working directory
