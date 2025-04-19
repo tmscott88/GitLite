@@ -1,4 +1,5 @@
 """Contains various user-facing input prompts"""
+import os
 import sys
 from shutil import which
 
@@ -108,14 +109,15 @@ def prompt_stash_message(include_untracked=False):
 def set_daily_notes_path():
     """Prompts to set a new Daily Notes path in the config file"""
     path = input("Set new Daily Notes path (or pass empty path to cancel): ")
-    fpath = path.replace(' ', '')
-    abs_path = file_utils.get_absolute_path(fpath)
-    if abs_path:
+    if path:
         try:
-            file_utils.create_new_directory(abs_path)
-            app_cfg.set_daily_notes_path(abs_path)
+            fpath = os.path.normpath(path.replace(' ', ''))
+            file_utils.create_new_directory(fpath)
+            app_cfg.set_daily_notes_path(fpath)
         except FileExistsError:
             return
+        except OSError as e:
+            app.print_error(f"Error while setting daily notes path: {e}")
     else:
         app.print_error(f"Canceled. Keep current path: '{app_cfg.get_daily_notes_root_path()}'")
 
