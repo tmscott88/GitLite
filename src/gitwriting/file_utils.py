@@ -3,8 +3,8 @@ import os
 import app_utils as app
 
 def get_absolute_path(rel_path):
-    """Returns the normalized, absolute path of a relative path"""
-    norm_path = os.path.normpath(rel_path)
+    """Returns the normalized, absolute path of a relative path (with spaces removed)"""
+    norm_path = os.path.normpath(rel_path).replace(' ', '')
     return os.path.abspath(norm_path)
 
 def get_entries_in_directory(path, include_hidden=False):

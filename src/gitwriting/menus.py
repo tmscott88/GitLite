@@ -365,21 +365,20 @@ def __open_default_browser():
 def __open_new_file():
     """Prompt new file. If the file already exists, opens the file in the defined editor."""
     path = input("Enter new file name (or pass empty name to cancel): ")
-    fpath = path.replace(' ', '')
-    abs_path = file_utils.get_absolute_path(fpath)
-    if not abs_path:
+    if not path:
         app.print_error("Canceled operation.")
     else:
-        if file_utils.is_file(abs_path):
-            __open_app("editor", abs_path)
+        fpath = file_utils.get_absolute_path(path)
+        if file_utils.is_file(fpath):
+            __open_app("editor", fpath)
         else:
             try:
-                file_utils.create_new_file(abs_path)
+                file_utils.create_new_file(fpath)
             except FileExistsError:
                 return
-            # Only open editor if file was created properly from the previous step
-            if file_utils.is_file(abs_path):
-                __open_app("editor", abs_path)
+            # Only open editor if file was created properly from the previous step (or it exists)
+            if file_utils.is_file(fpath):
+                __open_app("editor", fpath)
 
 def __open_daily_note():
     """If Daily Notes features is enabled, creates and/or opens today's note at a generated path."""

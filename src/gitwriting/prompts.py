@@ -1,5 +1,4 @@
 """Contains various user-facing input prompts"""
-import os
 import sys
 from shutil import which
 
@@ -111,7 +110,7 @@ def set_daily_notes_path():
     path = input("Set new Daily Notes path (or pass empty path to cancel): ")
     if path:
         try:
-            fpath = os.path.normpath(path.replace(' ', ''))
+            fpath = file_utils.get_absolute_path(path)
             file_utils.create_new_directory(fpath)
             app_cfg.set_daily_notes_path(fpath)
         except FileExistsError:
