@@ -46,7 +46,7 @@ def __handle_launch_args():
         \nSetup|View Config: [-c | --config | -C]  \
         \nVersion: [-v | --version | -V],  \
         \nView README: [-r | --readme | -R]"
-    usage_desc = f"\n[Usage] \n./{os.path.basename(__file__)} [OPTION]\n"
+    usage_desc = f"\n[Usage] \n{os.path.basename(sys.argv[0])} [OPTION]\n"
 
     option = sys.argv[1]
     if option in ("-h", "--help", "-H"):
