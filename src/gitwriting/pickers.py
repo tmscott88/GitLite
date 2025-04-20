@@ -126,6 +126,7 @@ class FileBrowser():
             if not options:
                 options = []
                 options.append(self.back_option)
+                options.append(Option("No entries here.", enabled=False))
             else:
                 if not self.__is_at_root_directory(back_path):
                     options.insert(0, self.back_option)
@@ -134,7 +135,6 @@ class FileBrowser():
         option, key_code = pick(options,
             title=f"DIR: {self.current_path}",
             footer=self.help_option_full,
-            default_index=first_opt_index,
             option_keys=self.OPTION_KEYS,
             quit_keys=QUIT_KEYS, is_paginated=False)
         # Quit
