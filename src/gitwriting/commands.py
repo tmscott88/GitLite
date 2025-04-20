@@ -51,7 +51,10 @@ class GitCommand(Command):
 
     def get_branch(self):
         """Returns the current branch."""
-        return self.get_output("git rev-parse --abbrev-ref HEAD")[0]
+        branch = self.get_output("git rev-parse --abbrev-ref HEAD")
+        if branch is None:
+            return None
+        return branch[0]
 
     def get_branch_index(self):
         """Returns the current branch's index (relative to other branches)."""
@@ -64,6 +67,8 @@ class GitCommand(Command):
     def get_branches(self, remove_indicator=False):
         """Returns the list of branches, with the current branch marked."""
         branches = self.get_output("git branch")
+        if branches is None:
+            return None
         if not remove_indicator:
             return branches
         return [b.replace("*", "").strip() for b in branches]
@@ -80,7 +85,7 @@ class GitCommand(Command):
 
     def get_commits(self, hashes_only=False, index=0, limit=-1):
         """Returns the Git repo's commit history (full or hashes only)"""
-        commits = self.get_output(f"git log --oneline HEAD~{index} -n {limit}")
+        commits = self.get_output(f"git log --oneline --skip={index} -n {limit}")
         if commits and hashes_only:
             return [c[:7] for c in commits]
         return commits

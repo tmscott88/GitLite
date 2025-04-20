@@ -82,6 +82,9 @@ def __branch_picker():
         app.print_warning("Cannot safely switch branches. "
             "Please commit, stash, or clean all changes first.")
         return
+    if not git_cmd.get_branches():
+        app.print_warning("No branches available.")
+        return
     branch_index = git_cmd.get_branch_index()
     picker = DataPicker(
         title="[Branches]",
