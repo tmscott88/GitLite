@@ -59,12 +59,12 @@ class DataPicker():
         next_index = limit * self.current_index
         # Handle the last pagination forward
         if next_index + limit >= self.total_entries:
-            limit = self.total_entries - next_index
+            limit = (self.total_entries - next_index) + 1
         if limit <= 0:
             options.append(back_option)
             options.append(Option("No more entries.", enabled=False))
-        if next_index < self.total_entries:
-            options.extend(self.populator(index=next_index, limit=limit))
+        elif limit > 0 and next_index < self.total_entries:
+            options = self.populator(index=next_index, limit=limit)
         option, key_code = pick(options,
             title=self.title,
             footer=help_option,

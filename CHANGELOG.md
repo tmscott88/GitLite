@@ -7,6 +7,7 @@
 - [] Shortcut to search for files within browser
 - [] Interactive Git repo setup?
 - [] Add rebasing, merging, other branch operations?
+- [] Checkout remote branch(es)
 
 ## 0.8.8
 
